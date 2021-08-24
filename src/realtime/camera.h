@@ -6,18 +6,16 @@
 #include "core/types.h"
 #include "RTCamera.h"
 namespace mcl {
-	// TODO1 实现自由移动摄像机，封装相应鼠标、键盘事件的函数
 	class Camera {
 	public:
 		virtual ~Camera() {};
 
-		//视图矩阵
 		virtual QMatrix4x4 getViewMatrix() = 0;
-		//为坐标轴单独确定一个视图矩阵
+
 		virtual QMatrix4x4 getViewMatrixForAxis() = 0;
-		//投影矩阵
+
 		virtual QMatrix4x4 getProjMatrix() = 0;
-		//为坐标轴单独确定一个投影矩阵
+
 		virtual QMatrix4x4 getProjMatrixForAxis() = 0;
 
 		virtual void mouseMoveEvent(QMouseEvent *ev) {};
