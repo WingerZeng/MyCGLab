@@ -1,0 +1,26 @@
+#title
+path_tracing
+#content
+//Create a heartshape by sweeping
+createface {(0,-1,0 1.5,1,0 0.75,2,0 0,1,0 -0.75,2,0 -1.5,1,0)};
+sweep  0  1 0,0,1 1;
+toPolygonMesh 0;
+//Catmull-Clark subdividing
+CatmullClarkPolygons 10 6;
+triangulatePolygonMesh 11;
+//Adjust location
+scale 12 0.4,0.4,0.4;
+translate 12 -1.0,-2.2,0;
+rotate 12 0,1,0 -20;
+//Load Cornell box scene
+loadObj "$(ExeDir)/example-scenes/cornellbox/cornellbox.obj";
+setLookAt 0, 0, 2.5 0, 1, 0 0,0,0 ;
+setFov 50;
+resize 400 400;
+//spp = 5*5
+set samplePerPixelDim 5;
+set threadNum $(MachCoreNum);
+raytrace;
+
+#description
+测试路径追踪模块以及降噪功能，渲染大概需要1-5分钟

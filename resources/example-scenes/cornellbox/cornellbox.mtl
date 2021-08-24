@@ -1,0 +1,26 @@
+# vkEngine Export mtl file
+newmtl cornellbox_0_material
+Kd 1 1 1
+Ks 0 0 0
+Ns 1
+newmtl cornellbox_1_material
+Kd 0 0.5 0
+Ks 0 0 0
+Ns 1
+newmtl cornellbox_2_material
+Kd 1 0 0
+Ks 0 0 0
+Ns 1
+newmtl cornellbox_light
+Kd 0.0 0.0 0.0
+Le 10 10 10
+Ks 0 0 0
+Ns 1
+newmtl cornellbox_4_material
+Kd 0 0 0
+Ks 1 1 1
+Ns 256
+newmtl cornellbox_5_material
+Kd 1 1 1
+Ks 1 1 1
+Ns 128

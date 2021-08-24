@@ -1,0 +1,25 @@
+#version 330 core
+layout(location = 0) in vec3 aPos;
+uniform vec3 normal;
+uniform vec4 ourColor;
+out vec4 aColor;
+uniform mat4 modelMat;
+uniform mat4 viewMat;
+uniform mat4 projMat;
+struct Light{
+vec3 pos; vec3 ambient; vec3 diffuse; vec3 specular;
+};
+uniform Light lights[10];
+uniform int lightCount;
+void main(){
+   gl_Position = projMat * viewMat * modelMat * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+   vec3 FragPos = vec3(viewMat * modelMat * vec4(aPos, 1.0));
+	vec4 tempColor;
+   if(normal.z < 0) tempColor = vec4(0.1,0.1,0.1,1.0);  //背面显示全黑
+	else tempColor = ourColor;
+	aColor = vec4(0,0,0,0);
+	for(int i=0;i<lightCount;i++){
+		vec3 totLight = lights[i].ambient+max(dot(normal,normalize(lights[i].pos-FragPos)),0)*lights[i].diffuse;
+		aColor += tempColor*(vec4(totLight,1.0)); //#TODO 材质区分光照三要素
+	}
+}

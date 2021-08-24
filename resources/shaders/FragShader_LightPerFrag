@@ -1,0 +1,19 @@
+#version 330 core
+uniform vec4 ourColor;
+out vec4 FragColor;
+in vec3 aNormal;
+in vec3 aFragPos;
+struct Light{
+vec3 pos; vec3 ambient; vec3 diffuse; vec3 specular;
+};
+uniform Light lights[10];
+uniform int lightCount;
+
+void main(){
+	FragColor = vec4(0,0,0,0);
+
+	for(int i=0;i<lightCount;i++){
+		vec3 totLight = lights[i].ambient+max(dot(aNormal,normalize(lights[i].pos-aFragPos)),0)*lights[i].diffuse;
+		FragColor += ourColor*(vec4(totLight,1.0)); //#TODO 材质区分光照三要素
+	}
+}

@@ -1,0 +1,18 @@
+#title
+make_heartshape
+#content
+//Create a heartshape by sweeping
+createface {(0,-1,0 1.5,1,0 0.75,2,0 0,1,0 -0.75,2,0 -1.5,1,0)};
+sweep  0  1 0,0,1 1;
+toPolygonMesh 0;
+//Catmull-Clark subdividing
+CatmullClarkPolygons 10 5;
+triangulatePolygonMesh 11;
+//Adjust view
+scale 12 0.7,0.7,0.7;
+rotate 12 0,1,0 10;
+wireframe 0;
+setLookAt 0.72383, 1.11913, 2.33499 0, 1, 0 0.424964, 0.847605, 1.42014;
+
+#description
+使用CAD操作+表面细分创建心形。

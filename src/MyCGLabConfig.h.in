@@ -1,0 +1,3 @@
+// the configured options and settings for MyCGLab
+#define MyCGLab_VERSION_MAJOR @MyCGLab_VERSION_MAJOR@
+#define MyCGLab_VERSION_MINOR @MyCGLab_VERSION_MINOR@

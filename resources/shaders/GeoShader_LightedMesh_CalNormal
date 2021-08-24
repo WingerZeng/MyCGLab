@@ -1,0 +1,29 @@
+#version 330			   
+																												   
+layout(triangles) in;																					   
+layout(triangle_strip, max_vertices = 3) out;															   
+out vec3 aNormal;
+in vec3 FragPos[];								
+out vec3 aFragPos;
+
+void main()																						
+{	
+	vec3 edge1 = FragPos[1]-FragPos[0];
+	vec3 edge2 = FragPos[2]-FragPos[1];
+	aNormal = normalize(cross(edge1,edge2));
+	if(aNormal.z<0) aNormal = -aNormal;  //双面光照
+																								   
+	gl_Position = gl_in[0].gl_Position;
+	aFragPos = FragPos[0];									   
+	EmitVertex();
+
+	gl_Position = gl_in[1].gl_Position;
+	aFragPos = FragPos[1];									   
+	EmitVertex();		
+
+	gl_Position = gl_in[2].gl_Position;
+	aFragPos = FragPos[2];									   
+	EmitVertex();	
+
+	EndPrimitive();										
+}

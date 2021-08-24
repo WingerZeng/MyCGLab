@@ -1,0 +1,19 @@
+#title
+bumpmap
+#content
+//Load moon scene with bumpmap
+loadObj "$(ExeDir)/example-scenes/44-moon-photorealistic-2k/Moon.obj";
+scale 0 0.24,0.24,0.24;
+translate 0 -2.2,-1,0;
+//Load Cornell box scene
+loadObj "$(ExeDir)/example-scenes/cornellbox/cornellbox.obj";
+setLookAt 0, 0, 2.5 0, 1, 0 0,0,0 ;
+setFov 50;
+resize 400 400;
+//spp = 6*6
+set samplePerPixelDim 6;
+set threadNum $(MachCoreNum);
+raytrace;
+
+#description
+测试bumpmap，渲染大概需要1-5分钟

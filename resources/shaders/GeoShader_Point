@@ -1,0 +1,25 @@
+#version 330																							   
+																												   
+layout(points) in;                              // now we can access 2 vertices						   
+layout(triangle_strip, max_vertices = 4) out;  // always (for now) producing 2 triangles (so 4 vertices)  
+																										   
+uniform vec2  u_viewportSize;																			   
+uniform float pointSize = 10;																			   
+																										   
+void main()																							   
+{																										   
+	vec4 p1 = gl_in[0].gl_Position;																		   
+	float xoffset =pointSize/ u_viewportSize.x;															   
+	float yoffset =pointSize/ u_viewportSize.y; 																						
+																											
+	gl_Position = p1 + vec4(xoffset, yoffset, 0.0, 0.0);												   
+	EmitVertex();																						   
+	gl_Position = p1 + vec4(-xoffset,yoffset, 0.0, 0.0);												   
+	EmitVertex();																						   
+	gl_Position = p1 + vec4(xoffset,-yoffset, 0.0, 0.0);												   
+	EmitVertex();																						   
+	gl_Position = p1 + vec4(-xoffset,-yoffset, 0.0, 0.0);												   
+	EmitVertex();																						   
+																										   
+	EndPrimitive();																						   
+}	
