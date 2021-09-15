@@ -10,6 +10,23 @@ file(GLOB source_files "./*/*.cpp")
 file(GLOB header_files "./*/*.h")
 add_executable(MyCGLab main.cpp ${source_files} ${header_files})
 
+# set include paths
+list(APPEND INCLUDE_DIRS
+	"${CMAKE_CURRENT_SOURCE_DIR}		"
+	"accelerators				"
+	"core					"
+	"geometries				"
+	"materials					"
+	"primitives				"
+	"raytrace					"
+	"realtime					"
+	"softrender				"
+	"ui					"
+	"${PROJECT_SOURCE_DIR}/include		"
+	"${PROJECT_BINARY_DIR}				"
+	"${CMAKE_CURRENT_BINARY_DIR}		")
+target_include_directories(MyCGLab PRIVATE ${INCLUDE_DIRS})
+
 # 自动执行qt moc
 set_target_properties(MyCGLab PROPERTIES AUTOMOC ON)
 # 自动执行qt uic
@@ -45,24 +62,6 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 target_link_libraries(MyCGLab PRIVATE ${EXT_LIBS})
-
-# set include paths
-list(APPEND INCLUDE_DIRS
-	"${CMAKE_CURRENT_SOURCE_DIR}		"
-	"accelerators				"
-	"core					"
-	"geometries				"
-	"materials					"
-	"primitives				"
-	"raytrace					"
-	"realtime					"
-	"softrender				"
-	"ui					"
-	"${PROJECT_SOURCE_DIR}/include		"
-	"${PROJECT_BINARY_DIR}				"
-	"${CMAKE_CURRENT_BINARY_DIR}		")
-
-target_include_directories(MyCGLab PRIVATE ${INCLUDE_DIRS})
 
 add_custom_command(TARGET MyCGLab POST_BUILD
                    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/resources" "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/"

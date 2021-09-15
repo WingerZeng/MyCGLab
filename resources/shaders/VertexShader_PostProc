@@ -1,0 +1,8 @@
+#version 430 core
+layout(location = 0) in vec3 aPos;
+layout(location = 2) in vec3 aTexCoord;
+out vec3 texCoord;
+void main(){
+	gl_Position = aPos;
+	texCoord = aTexCoord;
+}

@@ -63,7 +63,12 @@ namespace mcl {
 	class PPolygonMesh;
 	class PTriMesh;
 	class Light;
+	class PaintVisitor;
+	class PaintInfomation;
 	class Camera;
+	class PPoint;
+	class PPolygon;
+	class PLines;
 
 	class Sampler;
 	class RTCamera;

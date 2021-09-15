@@ -27,9 +27,6 @@ namespace mcl {
 		void delPrimitives(const std::vector < std::shared_ptr<T>>& prims);
 		template <class T>
 		void addPrimitives(const std::vector < std::shared_ptr<T>>& prims);
-		void addLight(std::shared_ptr<Light> light);
-		template <class T>
-		void addLights(const std::vector < std::shared_ptr<T>>& lights);
 		static void debugOpenGL();
 
 		int wireFrameMode(bool wfmode);
@@ -40,7 +37,6 @@ namespace mcl {
 
 		inline Camera& getCamera() { return *camera; }
 		const std::map<int, std::shared_ptr<Primitive>>& getPrimitives();
-		inline const std::vector<std::shared_ptr<Light>> getLights() const { return lights_; }
 
 		enum UpdateReason {
 			NONE				= 00,
@@ -52,13 +48,17 @@ namespace mcl {
 		};
 		void updateScene(UpdateReason reason);
 
+		void prepareLight();
+
 		std::shared_ptr<RTScene> createRTScene();
 
 		int setSkyBox(PathString path) {
 			if (!path.exist()) return -1;
 			rtinfo.skyboxpath = QString::fromStdString(path.str);
+			prepareLight();
 			return 0;
 		}
+
 
 	protected:
 		virtual void initializeGL() override;
@@ -71,6 +71,8 @@ namespace mcl {
 		virtual void keyReleaseEvent(QKeyEvent* ev) override;
 		void doPrimAdd();
 
+		virtual std::shared_ptr<PaintVisitor> getDafaultPainter();
+
 	signals:
 		void updated(UpdateReason reason);
 
@@ -81,9 +83,6 @@ namespace mcl {
 
 		std::shared_ptr<Camera> camera;
 		Axis axis;
-
-
-		QOpenGLBuffer rbo;
 
 		//鼠标点选相关
 		bool hitted = false;
@@ -96,6 +95,10 @@ namespace mcl {
 		static QOpenGLDebugLogger* logger;
 
 		bool wfmode_; // mode of wire frame
+
+		int rbo;
+
+		std::shared_ptr<PaintVisitor> painter;
 	};
 
 	template<class T>
@@ -103,15 +106,6 @@ namespace mcl {
 	{
 		for (const auto& prim : prims) {
 			addPrimitive(prim);
-		}
-		updateScene(PRIMITIVE);
-	}
-
-	template <class T>
-	void Scene::addLights(const std::vector < std::shared_ptr<T>>& lights)
-	{
-		for (const auto& light : lights) {
-			addLight(light);
 		}
 		updateScene(PRIMITIVE);
 	}

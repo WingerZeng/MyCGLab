@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 #include "ui/MainWindow.h"
-#include "ui/ItemManager.h"
+#include "ItemManager.h"
 #include "Scene.h"
 #include "PPolygonMesh.h"
 #include "PTriMesh.h"

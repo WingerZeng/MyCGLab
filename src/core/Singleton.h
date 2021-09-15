@@ -12,5 +12,5 @@ protected:
 };
 
 template<class T>
- T* Singleton<T>::singleton = nullptr;
+T* Singleton<T>::singleton = nullptr;
 

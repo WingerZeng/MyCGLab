@@ -13,7 +13,7 @@ namespace mcl {
 		//virtual bool intersectShadow(const Ray& ray) override; // #TODO2
 		virtual Bound3f worldBound();
 		virtual SurfaceRecord Sample(Sampler& sampler, Float& possibility) override; // 以面积为度量进行采样
-		//#TODO1
+		//#TODO2
 		//virtual SurfaceRecord Sample(const HitRecord& rec, Sampler& sampler, Float& possibility) = 0; // 以面积为度量进行采样
 		virtual SamplerRequestInfo getSamplerRequest() override {
 			return SamplerRequestInfo(0,1);

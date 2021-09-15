@@ -51,7 +51,7 @@ namespace mcl {
 		return result;\
 	}
 
-	class CadInterface:public QObject //#TODO Îö¹¹ºóÉ¾³ýsolid
+	class CadInterface:public QObject
 	{
 		Q_OBJECT
 	public:

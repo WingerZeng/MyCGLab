@@ -144,11 +144,16 @@ namespace mcl{
 		denoisedFilm = std::make_shared<Film>(*film);
 		GammaCorrectMapper().map(*film);
 		film->renderToQLabel(displayer[0]);
-		film->saveToBmp("./ori.bmp");
+
+#ifdef USE_OPTIX
 		Denoiser(denoisedFilm, Denoiser::DenoiserOption(Denoiser::USE_ALBEDO | Denoiser::USE_NORMAL | Denoiser::USE_HDR)).denoise();
 		GammaCorrectMapper().map(*denoisedFilm);
 		denoisedFilm->renderToQLabel(displayer[1]);
 		setCurrenRaytraceResult(displayer[1], denoisedFilm);
+#else
+		setCurrenRaytraceResult(displayer[1], film);
+#endif // USE_OPTIX
+
 
 		/* for test */
 	 //	std::shared_ptr<Film> film2(new Film(getScene()->width(), getScene()->height()));

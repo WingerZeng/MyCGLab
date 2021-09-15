@@ -631,8 +631,6 @@ namespace mcl {
 		return 0;
 	}
 
-
-	//#TODO Ω´color”Îvector∑÷¿Î
 	//Color Functions
 	inline bool isDark(const Color3f& color) {
 		return color.x() <= 0 && color.y() <= 0 && color.z() <= 0;
@@ -1268,6 +1266,8 @@ namespace mcl {
 	public:
 		ReadRemainString() = default;
 		ReadRemainString(std::string astr)
+			:str(astr) {};
+		ReadRemainString(const char * astr)
 			:str(astr) {};
 		bool empty() {
 			for (const auto& c : str) {

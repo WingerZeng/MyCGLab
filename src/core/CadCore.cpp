@@ -231,11 +231,11 @@ namespace mcl{
 	{
 		if (getSolid(f1) != getSolid(f2)) {
 			assert(0);
-			return -1; //#TODO 以后要能实现不同solid下的合并
+			return -1;
 		}
 		if (f2->getLoop()->size() > 1) {
 			assert(0);
-			return -1; //#TODO: what will happen when f2 has multi loops?
+			return -1;
 		} 
 		f1->addLoop(f2->getLoop());
 		f2->getLoop()->lface = f1;

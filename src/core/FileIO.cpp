@@ -70,7 +70,7 @@ namespace mcl {
 				sin >> type_; //目前默认illum=2处理
 			}
 			else if (title == "Le" || title == "Ke") {
-				ret[curKey]->fd("Le", QString::fromStdString(readRemainAll(sin)));
+				ret[curKey]->fd("Mat", "")->fd("Le", QString::fromStdString(readRemainAll(sin)));
 			}
 			else { //common material parameters
 				if (title.substr(0, 3) == "map")
@@ -94,7 +94,7 @@ namespace mcl {
 		return ret;
 	}
 
-	void readObj(QString path, std::vector < std::shared_ptr<Primitive>>& primitives, std::vector<std::shared_ptr<Light>>& lights) {
+	void readObj(QString path, std::vector < std::shared_ptr<Primitive>>& primitives) {
 		std::ifstream fin(path.toStdString());
 		if (!fin) {
 			LOG(FATAL) << "Error file path!";
@@ -122,22 +122,8 @@ namespace mcl {
 		auto setupMesh = [&]() {
 			// 根据信息构造三角网格
 			auto tri = std::make_shared<PTriMesh>(indices, pts, fcUvs, fcNormals);
-			tri->setRayTraceData(rtdata);
+			tri->setMaterialData(rtdata);
 			primitives.emplace_back(tri);
-
-			Color3f color;
-			if (rtdata->fd("Le") && rtdata->fd("Le")->toVector3f().length() > FloatZero) {
-				//#TODO1 生成光源
-				color = Color3f(1, 1, 1);
-				lights.emplace_back(std::make_shared<ConstantLight>(Color3f(0.2, 0.2, 0.2), Color3f(0.5, 0.5, 0.5), Color3f(0), tri->getCentroid(), Light::L_ABSOLUTE));
-			}
-			else if (rtdata->fd("Mat")->fd("Pars")->fd("Kd")) {
-				color = rtdata->fd("Mat")->fd("Pars")->fd("Kd")->toVector3f();
-			}
-
-			if (color.length() < 0.3) {
-				color = Color3f(0.2, 0.2, 0.2);
-			}
 
 			// 初始化
 			voffset += pts.size();

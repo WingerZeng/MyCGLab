@@ -7,7 +7,10 @@ uniform mat4 modelMat;
 uniform mat4 viewMat;
 uniform mat4 projMat;
 struct Light{
-vec3 pos; vec3 ambient; vec3 diffuse; vec3 specular;
+vec3 pos; 
+vec3 ambient; 
+vec3 emission;
+vec3 bound[2];
 };
 uniform Light lights[10];
 uniform int lightCount;
@@ -19,7 +22,7 @@ void main(){
 	else tempColor = ourColor;
 	aColor = vec4(0,0,0,0);
 	for(int i=0;i<lightCount;i++){
-		vec3 totLight = lights[i].ambient+max(dot(normal,normalize(lights[i].pos-FragPos)),0)*lights[i].diffuse;
+		vec3 totLight = lights[i].ambient+max(dot(normal,normalize(lights[i].pos-FragPos)),0)*lights[i].emission;
 		aColor += tempColor*(vec4(totLight,1.0)); //#TODO 材质区分光照三要素
 	}
 }

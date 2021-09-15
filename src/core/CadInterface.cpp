@@ -464,7 +464,8 @@ namespace mcl{
 	{
 		bpFace* fc = findFace(faceid);
 		std::vector<std::shared_ptr<mcl::Primitive>> plgs;
-		std::vector<std::vector<Point3f>> lps;
+		std::vector<std::vector<int>> lps;
+		std::vector<Point3f> pts;
 		for (auto lpit = fc->Floops()->begin(); lpit != fc->Floops()->end(); lpit++) {
 			bpHalfEdge* he = (*lpit)->getFirstHalfEdge();
 			bpHalfEdge* firstHe = he;
@@ -473,14 +474,15 @@ namespace mcl{
 				plgs.insert(plgs.end(),newps.begin(),newps.end());
 				continue;
 			}
-			lps.push_back(std::vector<Point3f>());
+			lps.emplace_back();
 			do
 			{
-				lps.back().push_back(he->getBeginVtx()->getCoord());
+				lps.back().push_back(pts.size());
+				pts.push_back(he->getBeginVtx()->getCoord());
 				he = he->Nxt();
 			} while (he != firstHe);
 		}
-		if(lps.size()) plgs.emplace_back(new mcl::PPolygon(lps));
+		if (lps.size()) plgs.emplace_back(new mcl::PPolygonMesh(std::vector<PPolygonMesh::Polygon>{PPolygonMesh::Polygon{lps}}, pts));
 		return plgs;
 	}
 

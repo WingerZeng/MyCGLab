@@ -40,8 +40,17 @@ namespace mcl {
 			return SamplerRequestInfo(0, 1);
 		}
 
+		virtual void initGL() override;
+
+		virtual void prepareGL(QOpenGLShaderProgram* shader) override;
+
 	private:
 		std::shared_ptr<Texture<Color3f>> diffuse;
+
+		//For real-time
+		ParameterType kdtype;
+		QVector4D kd;
+		QString kd_map;
 	};
 }
 

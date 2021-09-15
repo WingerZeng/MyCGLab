@@ -7,7 +7,7 @@
 #include "utilities.h"
 #include "primitives/Subdivide.h"
 #include "primitives/PPolygonMesh.h"
-#include "ui/ItemManager.h"
+#include "ItemManager.h"
 #include "GlobalInfo.h"
 #include "MyCGLabConfig.h"
 #define  BEGIN_FUNC_REGISTER\

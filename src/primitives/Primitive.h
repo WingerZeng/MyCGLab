@@ -29,19 +29,25 @@ public:
 	bool operator<(const Primitive& rhs) {
 		return this->id_ < rhs.id_;
 	}
-	mcl::Bound3f getBound() { return mcl::Bound3f(); } //#TODO1
+	virtual mcl::Bound3f getBound(); 
 	
 	virtual void copyAttribute(std::shared_ptr<Primitive> other);
+	virtual void initMaterial();
 
-	mcl::Transform localTransform() { return localTrans_; }
+	mcl::Transform localTransform() const { return localTrans_; }
 	void setLocalTransform(mcl::Transform localtrans) { localTrans_ = localtrans; }
 	void appendLocalTransform(mcl::Transform trans) { localTrans_ = localTrans_ * trans; }
+
+	mcl::Transform totTransform() const;
 
 	virtual Color3f color() = 0;
 
 	/* OpenGL绘制接口 */
-	virtual void initialize() = 0;
-	virtual void paint(PaintInfomation* info) = 0;
+	virtual void initAll();
+	virtual void initializeGL() = 0;
+	virtual std::shared_ptr<Material> getMaterial() = 0;
+	virtual void paint(PaintInfomation* info, PaintVisitor* visitor);
+	virtual void initialize(PaintVisitor* visitor);
 
 	/* 界面信息接口 */
 	virtual QString name() { return ""; }; //#TODO Primitive名称功能
@@ -63,6 +69,9 @@ private:
 	bool selected_ = false;
 
 	Transform localTrans_;
+
+	Primitive* father = nullptr;
+
 };
 
 inline Primitive::Primitive()
@@ -84,28 +93,31 @@ class GeometryPrimitive : public Primitive
 	RTTI_CLASS(GeometryPrimitive)
 public:
 	void copyAttribute(std::shared_ptr<Primitive> other) override;
-
+	
 	void setColor(Color3f color) { color_ = color; }
 	Color3f color() override { return color_; }
 	void setSelected(bool selected) override;
-	void setRayTraceData(const std::shared_ptr<DataNode> data) { rtdata = data; }
-
-	virtual void doBeforePaint(PaintInfomation* info);
-	virtual void doAfterPaint(PaintInfomation* info);
+	void setMaterialData(const std::shared_ptr<DataNode> data);
+	virtual std::shared_ptr<Material> getMaterial() override;
+	virtual std::shared_ptr<Material> getDefaultMaterial();
 
 	virtual std::shared_ptr<RTPrimitive> createRTPrimitive() override;
 	virtual std::shared_ptr<DataNode> getMaterialNode() override;
 	virtual std::shared_ptr<Geometry> createGeometry();
 	virtual void createMaterialAndLight(std::shared_ptr<Material>& mat, std::shared_ptr<RTSurfaceLight>& light);
 
+	virtual void initMaterial() override;
+
+	virtual void initAll() override;
+
 protected:
 	QMatrix4x4 tempTrans_;
+	bool tempSelected_;
 
 private:
 	Color3f color_;
 	Color3f tempColor_;
-
-	//#TODO2 克隆时需要克隆该信息
-	std::shared_ptr<DataNode> rtdata; //生成光追元素所需信息
+	std::shared_ptr<Material> mat;
+	std::shared_ptr<DataNode> mtdata;
 };
 }

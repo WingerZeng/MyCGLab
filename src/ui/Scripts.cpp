@@ -14,8 +14,8 @@ namespace mcl{
 		ui->textBrowser->clear();
 		ui->textBrowser_2->clear();
 		ui->listWidget->clear();
-		for (const auto& scp: scps_) {
-			ui->listWidget->addItem(scp.title);
+		for (auto it = scps_.rbegin(); it != scps_.rend(); it++) {
+			ui->listWidget->addItem(it->title);
 		}
 		updating = false;
 	}

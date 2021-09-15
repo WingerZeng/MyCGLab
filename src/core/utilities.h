@@ -108,7 +108,7 @@ namespace mcl {
 		return int(invoke(func, args));
 	}
 
-	// 通过标准库输入调用给定函数
+	//// 通过标准库输入调用给定函数
 	template<typename R, typename ...Args>
 	std::vector<std::string> getFuncArgTypeNames(std::function<R(Args...)>& func) {
 		//此处去除参数中的const与reference，防止tuple默认构造失败

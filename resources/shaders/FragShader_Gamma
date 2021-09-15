@@ -1,0 +1,10 @@
+#version 430 core
+out vec4 FragColor;
+in vec3 texCoord;
+uniform Sampler2D frame;
+uniform float gamma = 2.2;
+
+void main(){
+	FragColor.a = 1;
+	FragColor.rgb =  pow(texture(frame,texCoord).rgb, vec3(1.0/gamma));
+}

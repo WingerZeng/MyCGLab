@@ -18,14 +18,13 @@
 #include "mcl.h"
 #include "types.h"
 
-#define DATAB (Singleton<DataBase>::GetSingletonPtr())
-
-class DataBase;
 class DataNode{
 public:
-    friend DataBase;
-    QString getV(){ return value; }
+
+	QString getV(){ return value; }
     QString getK(){ return key; }
+
+	std::shared_ptr<DataNode> clone() const;
 
 	typedef std::vector<std::shared_ptr<DataNode>>::iterator iterator;
 

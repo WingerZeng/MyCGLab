@@ -4,7 +4,6 @@
 #include <QTimer>
 #include "ViewCamera.h"
 namespace mcl {
-	// #BUG1 setLookAt 后移动鼠标会抖动
 	class PerspectiveCamera: public ViewCamera
 	{
 	public:

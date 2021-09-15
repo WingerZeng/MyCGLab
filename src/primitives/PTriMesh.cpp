@@ -3,6 +3,8 @@
 #include "PaintInformation.h"
 #include "geometries/GTriangleMesh.h"
 #include "Light.h"
+#include "PaintVisitor.h"
+#include "Material.h"
 namespace mcl{
 	
 	PTriMesh::PTriMesh(const std::vector<int>& tris, const std::vector<Point3f>& pts) :tris_(tris)
@@ -12,6 +14,26 @@ namespace mcl{
 			pts_.push_back(pt.x());
 			pts_.push_back(pt.y());
 			pts_.push_back(pt.z());
+		}
+
+		std::set<std::pair<int, int>> egs;
+		for (int i = 0; i < tris_.size(); i += 3) {
+			int eg[3][2] = { {0,1} ,{0,2}, {1,2} };
+			for (int j = 0; j < 3; j++) {
+				int p1 = tris_[i + eg[j][0]];
+				int p2 = tris_[i + eg[j][1]];
+				if (p1 < p2)
+					std::swap(p1, p2);
+				egs.insert(std::make_pair(p1, p2));
+			}
+		}
+		for (auto it = egs.begin(); it != egs.end(); it++) {
+			linepts_.push_back(pts_[3 * it->first + 0]);
+			linepts_.push_back(pts_[3 * it->first + 1]);
+			linepts_.push_back(pts_[3 * it->first + 2]);
+			linepts_.push_back(pts_[3 * it->second + 0]);
+			linepts_.push_back(pts_[3 * it->second + 1]);
+			linepts_.push_back(pts_[3 * it->second + 2]);
 		}
 	}
 
@@ -24,113 +46,116 @@ namespace mcl{
 			pts_.push_back(pt.y());
 			pts_.push_back(pt.z());
 		}
+
+		std::set<std::pair<int, int>> egs;
+		for (int i = 0; i < tris_.size(); i += 3) {
+			int eg[3][2] = { {0,1} ,{0,2}, {1,2} };
+			for (int j = 0; j < 3; j++) {
+				int p1 = tris_[i + eg[j][0]];
+				int p2 = tris_[i + eg[j][1]];
+				if (p1 < p2)
+					std::swap(p1, p2);
+				egs.insert(std::make_pair(p1, p2));
+			}
+		}
+		for (auto it = egs.begin(); it != egs.end(); it++) {
+			linepts_.push_back(pts_[3 * it->first + 0]);
+			linepts_.push_back(pts_[3 * it->first + 1]);
+			linepts_.push_back(pts_[3 * it->first + 2]);
+			linepts_.push_back(pts_[3 * it->second + 0]);
+			linepts_.push_back(pts_[3 * it->second + 1]);
+			linepts_.push_back(pts_[3 * it->second + 2]);
+		}
 	}
 
-	void PTriMesh::initialize()
+	void PTriMesh::initializeGL()
 	{
 		this->initializeOpenGLFunctions();
 
-		if (getIndices().size() < 3 || pts_.size() <= 9) return;
-
-		ebo = std::make_shared<QOpenGLBuffer>(QOpenGLBuffer::IndexBuffer);
 		vao = std::make_shared<QOpenGLVertexArrayObject>();
 		vbo = std::make_shared<QOpenGLBuffer>();
 
 		vao->create();
 		vao->bind();
+
 		vbo->create();
 		vbo->bind();
-		ebo->create();
-		ebo->bind();
-		vbo->allocate(&pts_[0], pts_.size() * sizeof(Float));
-		ebo->allocate(&getIndices()[0], getIndices().size() * sizeof(int));
 
-		int attr = -1;
-		attr = CommonShader::ptr()->attributeLocation("aPos");
-		CommonShader::ptr()->setAttributeBuffer(attr, GL_FLOAT, 0, 3, 0);
-		CommonShader::ptr()->enableAttributeArray(attr);
+		std::vector<Float> allpts; //将pts和indices合并
+		for (const auto idx : tris_) {
+			allpts.push_back(pts_[3 * idx + 0]);
+			allpts.push_back(pts_[3 * idx + 1]);
+			allpts.push_back(pts_[3 * idx + 2]);
+		}
 
-		attr = LightPerFragShader::ptr()->attributeLocation("aPos");
-		LightPerFragShader::ptr()->setAttributeBuffer(attr, GL_FLOAT, 0, 3, 0);
-		LightPerFragShader::ptr()->enableAttributeArray(attr);
+		std::vector<Float> tempuvs;
+		for (const auto uv : uvs) {
+			tempuvs.push_back(uv[0]);
+			tempuvs.push_back(uv[1]);
+		}
+		
+		std::vector<Float> tempnormals;
+		for (const auto normal : normals) {
+			tempnormals.push_back(normal[0]);
+			tempnormals.push_back(normal[1]);
+			tempnormals.push_back(normal[2]);
+		}
 
+		//导入面片顶点数据
+		auto totsize = (allpts.size() + tempuvs.size() + tempnormals.size()) * sizeof(Float);
+		glBufferData(GL_ARRAY_BUFFER, totsize, nullptr, GL_STATIC_DRAW);
+		GLintptr offset1 = 0;
+		glBufferSubData(GL_ARRAY_BUFFER, offset1, allpts.size() * sizeof(Float), &allpts[0]);
+		GLintptr offset2 = allpts.size() * sizeof(Float);
+		glBufferSubData(GL_ARRAY_BUFFER, offset2, tempnormals.size() * sizeof(Float), &tempnormals[0]);
+		GLintptr offset3 = offset2 + tempnormals.size() * sizeof(Float);
+		glBufferSubData(GL_ARRAY_BUFFER, offset3, tempuvs.size() * sizeof(Float), &tempuvs[0]);
 
-		attr = LineShader::ptr()->attributeLocation("aPos");
-		LineShader::ptr()->setAttributeBuffer(attr, GL_FLOAT, 0, 3, 0);
-		LineShader::ptr()->enableAttributeArray(attr);
+		//导入边顶点数据
+		linevbo = std::make_shared<QOpenGLBuffer>();
+		linevbo->create();
+		linevbo->bind();
+		glBufferData(GL_ARRAY_BUFFER, linepts_.size() * sizeof(Float), &linepts_[0], GL_STATIC_DRAW);
 
-		readyToDraw = true;
 	}
 
-	void PTriMesh::paint(PaintInfomation* info)
+	void PTriMesh::initialize(QOpenGLShaderProgram* shader)
 	{
-		doBeforePaint(info);
-		if (!readyToDraw) return;
+		vao->bind();
+		vbo->bind();
+		shader->bind();
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		shader->enableAttributeArray(0);
+		
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), (void*)(sizeof(Float) * tris_.size() * 3));
+		shader->enableAttributeArray(1);
 
-		if (info->fillmode == FILL || info->fillmode == FILL_WIREFRAME) {
-			QOpenGLShaderProgram* shader;
-			if (info->lights.size() && !selected())
-			{
-				shader = LightPerFragShader::ptr();
-				shader->bind();
-				shader->setUniformValue("modelMat", QMatrix4x4());
-				shader->setUniformValue("viewMat", info->viewMat);
-				shader->setUniformValue("projMat", info->projMat);
-				shader->setUniformValue("ourColor", color().x(), color().y(), color().z(), 1.0f);
-				shader->setUniformValue("lightCount", GLint(info->lights.size()));
-				//auto viewNormal = QVector3D((info->viewMat).inverted().transposed()*QVector4D(QVector3D(normal_), 0));
-				//if (viewNormal.z() < 0) viewNormal = -viewNormal;
-				for (int j = 0; j < info->lights.size(); j++) {
-					std::string lightname = ("lights[" + std::to_string(j) + "]").c_str();
-					shader->setUniformValue((lightname + ".ambient").c_str(), QVector3D(info->lights[j]->getAmbient()));
-					shader->setUniformValue((lightname + ".pos").c_str(), QVector3D(info->lights[j]->getPosition()));
-					shader->setUniformValue((lightname + ".diffuse").c_str(), QVector3D(info->lights[j]->getDiffuse()));
-				}
-			}
-			else {
-				shader = CommonShader::ptr();
-				shader->bind();
-				shader->setUniformValue("modelMat", QMatrix4x4());
-				shader->setUniformValue("viewMat", info->viewMat);
-				shader->setUniformValue("projMat", info->projMat);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Float), (void*)(sizeof(Float) * (tris_.size() + normals.size()) * 3));
+		shader->enableAttributeArray(2);
+	}
 
-				shader->setUniformValue("ourColor", color().x(), color().y(), color().z(), 1.0f);
-			}
+	void PTriMesh::initialize(PaintVisitor* visitor)
+	{
+		visitor->initTris(this);
+	}
 
-			vao->bind();
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			glDrawElements(GL_TRIANGLES, getIndices().size(), GL_UNSIGNED_INT, 0);
+	std::shared_ptr<QOpenGLVertexArrayObject> PTriMesh::getVAO()
+	{
+		return vao;
+	}
 
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
+	void PTriMesh::initializeLine(QOpenGLShaderProgram* shader)
+	{
+		vao->bind();
+		linevbo->bind();
+		shader->bind();
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		shader->enableAttributeArray(0);
+	}
 
-			shader->release();
-
-		}
-		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {
-			LineShader::ptr()->bind();
-			LineShader::ptr()->setUniformValue("modelMat", QMatrix4x4());
-			LineShader::ptr()->setUniformValue("viewMat", info->viewMat);
-			LineShader::ptr()->setUniformValue("projMat", info->projMat);
-			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
-			LineShader::ptr()->setUniformValue("u_viewportSize", info->width, info->height);
-			LineShader::ptr()->setUniformValue("u_thickness", GLfloat(info->lineWidth));
-			glEnable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(-1, -1);
-
-			vao->bind();
-
-			// #PERF3 使用一个大的数组来保存所有边界线 1.去掉循环 2.去掉函数调用中指定索引
-			int nTri = getIndices().size() / 3;
-			for(int i=0;i< nTri;i++)
-				glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, (GLvoid*)((i*3)*sizeof(unsigned int)));
-
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
-			LineShader::ptr()->release();
-		}
-
-		doAfterPaint(info);
+	void PTriMesh::paint(PaintInfomation* info, PaintVisitor* visitor)
+	{
+		visitor->paintTris(info, this);
 	}
 
 	std::unique_ptr<mcl::Primitive> PTriMesh::clone()
@@ -140,7 +165,7 @@ namespace mcl{
 		for (int i = 0; i < pts_.size()/3; i++) {
 			pts.emplace_back(pts_[i * 3], pts_[i * 3 + 1], pts_[i * 3 + 2]);
 		}
-		return std::make_unique<PTriMesh>(tris_, pts);
+		return std::make_unique<PTriMesh>(tris_, pts, uvs, normals);
 	}
 
 	std::shared_ptr<mcl::Geometry> PTriMesh::createGeometry()
@@ -160,6 +185,47 @@ namespace mcl{
 			ret.z() += pts_[i + 2];
 		}
 		return ret / pts_.size() * 3;
+	}
+
+	mcl::Bound3f PTriMesh::getBound()
+	{
+		Bound3f ret;
+		for (int i = 0; i < pts_.size(); i += 3) {
+			ret.unionPt(Point3f(pts_[i], pts_[i + 1], pts_[i + 2]));
+		}
+		return this->totTransform()(ret);
+	}
+
+	void PTriMesh::initAll()
+	{
+		if (this->normals.empty())
+			generateNormal();
+		GeometryPrimitive::initAll();
+	}
+
+	void PTriMesh::generateNormal()
+	{
+		//#TODO0
+	}
+
+	std::shared_ptr<QOpenGLBuffer> PTriMesh::getVBO()
+	{
+		return vbo;
+	}
+
+	std::shared_ptr<QOpenGLBuffer> PTriMesh::getLineVBO()
+	{
+		return linevbo;
+	}
+
+	int PTriMesh::getTriNumer()
+	{
+		return getIndices().size() / 3;
+	}
+
+	int PTriMesh::getEdgeNumber()
+	{
+		return linepts_.size() / 6;
 	}
 
 }

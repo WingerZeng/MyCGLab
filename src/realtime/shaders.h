@@ -114,6 +114,10 @@ namespace mcl {
 	DEF_SHADER_SOURCE(VertexShader_OutputPos);
 
 	DEF_SHADER_SOURCE(FragShader_LightPerFrag);
+
+	DEF_SHADER_SOURCE(VertexShader_PostProc);
+
+	DEF_SHADER_SOURCE(FragShader_Gamma);
 #undef DEF_SHADER_SOURCE
 //---------------------------------
 //
@@ -126,5 +130,6 @@ namespace mcl {
 	using LineShader = Shader<VertexShader_Mesh, GeoShader_Line, FragShader_Mesh>;
 	using PointShader = Shader<VertexShader_Mesh, GeoShader_Point, FragShader_Mesh>;
 	using LightPerFragShader = Shader<VertexShader_OutputPos, GeoShader_LightedMesh_CalNormal, FragShader_LightPerFrag>;
+	using GammaCorrectShader = Shader<VertexShader_PostProc, FragShader_Gamma>;
 }
 

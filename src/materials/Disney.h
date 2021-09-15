@@ -51,7 +51,6 @@ namespace mcl {
 
 		virtual Color3f calIn(const Vector3f& out, Vector3f& in, Float& possibility, Sampler& sampler, SurfaceType sft = ALL_Surface, ScatterType sct = ALL_Scatter) const override;;
 
-		//#TODO1
 		virtual Float calPossibility(const Vector3f& out, const Vector3f& in, SurfaceType sft = ALL_Surface, ScatterType sct = ALL_Scatter) const override;;
 
 		virtual SamplerRequestInfo getSamplerRequest() const override { return SamplerRequestInfo(1,1); }

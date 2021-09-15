@@ -14,13 +14,30 @@ namespace mcl {
 
 		virtual std::unique_ptr<BsdfGroup> getBsdfs(HitRecord* rec, Sampler& sampler) const override;
 
-
 		virtual SamplerRequestInfo getSamplerRequest() const override;
+
+
+		virtual void initGL() override;
+
+		virtual void prepareGL(QOpenGLShaderProgram* shader) override;
 
 	private:
 		std::shared_ptr<Texture<Color3f>> kd;
 		std::shared_ptr<Texture<Color3f>> ks;
 		std::shared_ptr<Texture<Float>> ns;
+
+		//for real-time
+		ParameterType kdtype;
+		QVector4D kd_vec;
+		QString kd_map;
+
+		ParameterType kstype;
+		QVector4D ks_vec;
+		QString ks_map;
+
+		ParameterType nstype;
+		Float ns_float;
+		QString ns_map;
 	};
 
 

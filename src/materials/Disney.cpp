@@ -237,7 +237,7 @@ namespace mcl{
 			}
 		}
 		else {
-			//#TODO1
+			//#TODO2 同时采样diffuse和specular
 			CHECK(0);
 		}
 
@@ -246,7 +246,7 @@ namespace mcl{
 
 	Float DisneyBrdf::calPossibility(const Vector3f& out, const Vector3f& in, SurfaceType sft /*= ALL_Surface*/, ScatterType sct /*= ALL_Scatter*/) const
 	{
-		//#TODO1
+		//#TODO2
 		CHECK(0);
 		return 0;
 	}

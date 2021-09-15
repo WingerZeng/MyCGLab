@@ -112,6 +112,7 @@ namespace mcl{
 	LambertainMaterial::LambertainMaterial(DataNode* data)
 	{
 		diffuse = getColorTexture("Kd",data);
+		kdtype = getColorTexture("Kd", data, kd, kd_map);
 	}
 
 	std::unique_ptr<mcl::BsdfGroup> LambertainMaterial::getBsdfs(HitRecord* rec, Sampler& sampler) const
@@ -121,6 +122,22 @@ namespace mcl{
 		std::unique_ptr<BsdfGroup> bsdfs(new BsdfGroup(Vector3f(rec->bumped_n), Normalize(rec->uvec), Vector3f(rec->n)));
 		bsdfs->addBsdf(std::unique_ptr<Bsdf>(new LambertainBsdf(diffuse->value(*rec))));
 		return bsdfs;
+	}
+
+	void LambertainMaterial::initGL()
+	{
+		//#TODO1 初始化纹理
+	}
+
+	void LambertainMaterial::prepareGL(QOpenGLShaderProgram* shader)
+	{
+		shader->setUniformValue("Le", QVector4D(QVector3D(getEmission()), 1));
+		shader->setUniformValue("MatType", (GLint)_type);
+		if (kdtype & P_Color) {
+			shader->setUniformValue("ourColor", kd);
+			shader->setUniformValue("Kd", kd);
+		}
+		//#TODO1 装载纹理
 	}
 
 }

@@ -12,12 +12,15 @@
 #include "RayTracer.h"
 #include "RTScene.h"
 #include "ToneMapper.h"
+#include "material.h"
 #include "Bsdf.h"
 #include "RTLight.h"
 #include <QLabel>
 #include "utilities.h"
 #include "ui/Console.h"
 #include "ui/MainWindow.h"
+#include "DefaultPaintVisitor.h"
+
 namespace mcl {
 Scene::Scene(QWidget* parent)
 	: QOpenGLWidget(parent)
@@ -31,14 +34,14 @@ Scene::Scene(QWidget* parent)
 	format.setOption(QSurfaceFormat::DebugContext);
 #endif
 	//采样倍数
-	format.setSamples(32);
+	format.setSamples(16);
 	this->setFormat(format);
 	wfmode_ = true;
 
 	setFocusPolicy(Qt::StrongFocus);
 
 	camera.reset(new PerspectiveCamera);
-	lights_.push_back(std::shared_ptr<Light>(new ConstantLight(Vector3f(0.5, 0.5, 0.5), Vector3f(0.9, 0.9, 0.9), Vector3f(0.0f), Point3f(4000, 4000, 5000))));
+	//lights_.push_back(std::shared_ptr<Light>(new ConstantLight(Vector3f(0.5, 0.5, 0.5), Vector3f(0.9, 0.9, 0.9), Vector3f(0.0f), Point3f(4000, 4000, 5000))));
 }
 
 QOpenGLDebugLogger* Scene::logger = nullptr;
@@ -54,6 +57,7 @@ void Scene::initializeGL()
 
 	this->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 	this->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	painter = getDafaultPainter();
 
 	//相机初始化
 	camera->initialize(width(), height());
@@ -105,8 +109,8 @@ void Scene::paintGL()
 	info.width = width();
 	info.height = height();
 
-	for(const auto& prim : prims_) {
-		prim.second->paint(&info);
+	for (auto& prim : prims_) {
+		prim.second->paint(&info, painter.get());
 	}
 
 	//坐标轴
@@ -152,7 +156,8 @@ void Scene::doPrimAdd()
 		const auto& prim = primsToAdd.back();
 		if (prims_.find(prim->id()) == prims_.end()) {
 			prims_[prim->id()] = prim;
-			prim->initialize();
+			prim->initAll();
+			prim->initialize(painter.get());
 		}
 		primsToAdd.pop_back();
 	}
@@ -161,7 +166,28 @@ void Scene::doPrimAdd()
 void Scene::updateScene(UpdateReason reason)
 {
 	update();
+	repaint();
+	if (reason == PRIMITIVE) {
+		prepareLight();
+	}
 	emit updated(reason);
+}
+
+void Scene::prepareLight()
+{
+	lights_.clear();
+	for (const auto& prim : prims_) {
+		if (prim.second->getMaterial()->hasEmission()) {
+			lights_.push_back(std::make_shared<Light>(prim.second->getMaterial()->emission(), prim.second));
+		}
+	}
+	for (const auto& prim : primsToAdd) {
+		if (prim->getMaterial()->hasEmission()) {
+			lights_.push_back(std::make_shared<Light>(prim->getMaterial()->emission(), prim));
+		}
+	}
+
+	//#TODO1 适应环境贴图光源
 }
 
 std::shared_ptr<mcl::RTScene> Scene::createRTScene()
@@ -179,7 +205,6 @@ std::shared_ptr<mcl::RTScene> Scene::createRTScene()
 	}
 	if (rtinfo.skyboxpath != "") {
 		auto skytex = std::make_shared<PixelMapTexture>(rtinfo.skyboxpath);
-		//#TEST
 		auto skylight = std::make_shared<RTSkyBox>(skytex,Color3f(1.00, 1.00, 1.00),Transform::rotate(Vector3f(1,0,0),-90)); //使y轴朝上
 		rtlights.push_back(skylight);
 	}
@@ -197,11 +222,6 @@ void Scene::delPrimitive(int id)
 		else it++;
 	}
 	updateScene(PRIMITIVE);
-}
-
-void Scene::addLight(std::shared_ptr<Light> light)
-{
-	lights_.push_back(light);
 }
 
 void Scene::debugOpenGL()
@@ -271,4 +291,9 @@ void mcl::Scene::addPrimitive(std::shared_ptr<Primitive> prim)
 	primsToAdd.push_back(prim);
 	updateScene(PRIMITIVE);
 }
+}
+
+std::shared_ptr<mcl::PaintVisitor> mcl::Scene::getDafaultPainter()
+{
+	return std::make_shared<DefaultPaintVisitor>();
 }

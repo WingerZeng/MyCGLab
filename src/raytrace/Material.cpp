@@ -8,6 +8,16 @@
 #include "algorithms.h"
 namespace mcl{
 
+	bool Material::hasEmission() const
+	{
+		return emiss.length() > FloatZero;
+	}
+
+	mcl::Color3f Material::emission() const
+	{
+		return emiss;
+	}
+
 	void Material::bumpNormal(HitRecord* rec) const
 	{
 		if (bumpmap) {
@@ -19,6 +29,16 @@ namespace mcl{
 		else {
 			rec->bumped_n = rec->n;
 		}
+	}
+
+	void Material::initGL()
+	{
+		LOG(FATAL) << "Unimplemented method!";
+	}
+
+	void Material::prepareGL(QOpenGLShaderProgram* shader)
+{
+		LOG(FATAL) << "Unimplemented method!";
 	}
 
 	const std::array<QString, mcl::Material::MeterialTypeSize> Material::matTypeToName = {
@@ -150,10 +170,14 @@ namespace mcl{
 			CHECK(0);
 			break;
 		}
+		ret->_type = t;
 		//处理bumpmap
 		if(node->fd("map_Bump") && QFile(node->fd("map_Bump")->getV()).exists())
 			ret->setBumpMap(getColorTexture("Bump", node));
 
+		//处理Le
+		if (node->fd("Le"))
+			ret->setEmission(node->fd("Le")->toVector3f());
 		return ret;
 	}
 
@@ -206,6 +230,27 @@ namespace mcl{
 		}
 	}
 
+	mcl::Material::ParameterType Material::getColorTexture(QString name, DataNode* node, QVector4D& color, QString& texture)
+	{
+		ParameterType ret = P_NULL;
+		auto cnode = node->fd(name);
+		if (cnode) {
+			color = QVector4D(QVector3D(cnode->toVector3f()));
+			ret = ParameterType(ret | P_Color);
+		}
+		QString mapname = "map_" + name;
+		auto mapnode = node->fd(mapname);
+		if (mapnode && QFile(mapnode->getV()).exists()) {
+			texture = mapnode->getV();
+			ret = ParameterType(ret | P_Map);
+		}
+
+		if ((ret&P_Map) && (!(ret&P_Color) || cnode->toVector3f().length() == 0)) {
+			return P_Map;
+		}
+		return ret;
+	}
+
 	std::shared_ptr<mcl::Texture<mcl::Float>> Material::getFloatTexture(QString name, DataNode* node)
 	{
 		std::shared_ptr<ConstantTexture<Float>> ct;
@@ -233,6 +278,30 @@ namespace mcl{
 		else {
 			CHECK(0);
 		}
+	}
+
+	mcl::Material::ParameterType Material::getFloatTexture(QString name, DataNode* node, Float& value, QString& texture)
+	{
+		ParameterType ret = P_NULL;
+		auto cnode = node->fd(name);
+		if (cnode) {
+			ret = ParameterType(ret | P_Color);
+			value = cnode->toDouble();
+		}
+		//暂时不支持Float纹理的贴图
+		//QString mapname = "map_" + name;
+		//auto mapnode = node->fd(mapname);
+		//if (mapnode && QFile(mapnode->getV()).exists()) {
+		//	mt = std::make_shared<PixelMapTexture>(mapnode->getV());
+		//}
+
+		//if (mt && !ct) {
+		//	return mt;
+		//}
+		//if (mt && ct) {
+		//	return std::make_shared<ProductTexture<Float>>(mt, ct);
+		//}
+		return ret;
 	}
 
 	int Material::inputToNode(ReadRemainString input, DataNode* node)
@@ -279,7 +348,10 @@ namespace mcl{
 		if (sin >> path && path.exist()) {
 			node->setChild("map_Bump", QString::fromStdString(path.str));
 		}
-
+		Color3f emiss;
+		if (sin >> emiss) {
+			node->setChild("Le", QString::number(emiss.x()) + " " + QString::number(emiss.y()) + " " + QString::number(emiss.z()));
+		}
 		return 0;
 	}
 

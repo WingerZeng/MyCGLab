@@ -7,7 +7,7 @@
 #include "PTriMesh.h"
 #include "realtime/Scene.h"
 #include "ui/MainWindow.h"
-#include "ui/ItemManager.h"
+#include "ItemManager.h"
 namespace mcl{
 	
 	PPolygonMesh::PPolygonMesh(std::shared_ptr<PTriMesh> trimesh)
@@ -28,7 +28,6 @@ namespace mcl{
 		if(vbo)vbo->destroy();
 		if(vao)vao->destroy();
 		if(linevbo)linevbo->destroy();
-		if(linevao)linevao->destroy();
 	}
 
 	int PPolygonMesh::toTriangleMesh(std::vector<int>& tris, std::vector<Point3f>& pts)
@@ -115,7 +114,7 @@ namespace mcl{
 		return 0;
 	}
 
-	void PPolygonMesh::initialize()
+	void PPolygonMesh::initializeGL()
 	{
 		this->initializeOpenGLFunctions();
 
@@ -131,15 +130,6 @@ namespace mcl{
 		vbo->bind();
 		vbo->allocate(&tessPts_[0], tessPts_.size() * sizeof(Float));
 
-		int attr = -1;
-		attr = CommonShader::ptr()->attributeLocation("aPos");
-		CommonShader::ptr()->setAttributeBuffer(attr, GL_FLOAT, 0, 3, 0);
-		CommonShader::ptr()->enableAttributeArray(attr);
-
-		attr = LightPerFragShader::ptr()->attributeLocation("aPos");
-		LightPerFragShader::ptr()->setAttributeBuffer(attr, GL_FLOAT, 0, 3, 0);
-		LightPerFragShader::ptr()->enableAttributeArray(attr);
-
 		//生成边界点
 		for (const auto& plg : plgs_) {
 			for (const auto& lp : plg.lps_) {
@@ -152,89 +142,10 @@ namespace mcl{
 			}
 		}
 
-		linevao = std::make_shared<QOpenGLVertexArrayObject>();
 		linevbo = std::make_shared<QOpenGLBuffer>();
-
-		linevao->create();
-		linevao->bind();
 		linevbo->create();
 		linevbo->bind();
 		linevbo->allocate(&boundPts_[0], boundPts_.size() * sizeof(Float));
-
-		attr = -1;
-		attr = LineShader::ptr()->attributeLocation("aPos");
-		LineShader::ptr()->setAttributeBuffer(attr, GL_FLOAT, 0, 3, 0);
-		LineShader::ptr()->enableAttributeArray(attr);
-
-		readyToDraw = true;
-	}
-
-	void PPolygonMesh::paint(PaintInfomation* info)
-	{
-		doBeforePaint(info);
-		if (!readyToDraw) return;
-		if (info->fillmode == FILL || info->fillmode == FILL_WIREFRAME) {
-			QOpenGLShaderProgram* shader;
-			if (info->lights.size() && !selected())
-			{
-				shader = LightPerFragShader::ptr();
-				shader->bind();
-				shader->setUniformValue("modelMat", QMatrix4x4());
-				shader->setUniformValue("viewMat", info->viewMat);
-				shader->setUniformValue("projMat", info->projMat);
-				shader->setUniformValue("ourColor", color().x(), color().y(), color().z(), 1.0f);
-				shader->setUniformValue("lightCount", GLint(info->lights.size()));
-				//auto viewNormal = QVector3D((info->viewMat).inverted().transposed()*QVector4D(QVector3D(normal_), 0));
-				//if (viewNormal.z() < 0) viewNormal = -viewNormal;
-				for (int j = 0; j < info->lights.size(); j++) {
-					std::string lightname = ("lights[" + std::to_string(j) + "]").c_str();
-					shader->setUniformValue((lightname + ".ambient").c_str(), QVector3D(info->lights[j]->getAmbient()));
-					shader->setUniformValue((lightname + ".pos").c_str(), QVector3D(info->lights[j]->getPosition()));
-					shader->setUniformValue((lightname + ".diffuse").c_str(), QVector3D(info->lights[j]->getDiffuse()));
-				}
-			}
-			else {
-				shader = CommonShader::ptr();
-				shader->bind();
-				shader->setUniformValue("modelMat", QMatrix4x4());
-				shader->setUniformValue("viewMat", info->viewMat);
-				shader->setUniformValue("projMat", info->projMat);
-
-				shader->setUniformValue("ourColor", color().x(), color().y(), color().z(), 1.0f);
-			}
-
-			vao->bind();
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-			for(int i =0;i<drawInfo_.size();i++)
-				glDrawArrays(drawInfo_[i].type, drawInfo_[i].offset, drawInfo_[i].size);
-
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
-
-			shader->release();
-		}
-		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {  //选中时隐藏
-			LineShader::ptr()->bind();
-			LineShader::ptr()->setUniformValue("modelMat", QMatrix4x4());
-			LineShader::ptr()->setUniformValue("viewMat", info->viewMat);
-			LineShader::ptr()->setUniformValue("projMat", info->projMat);
-			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
-			LineShader::ptr()->setUniformValue("u_viewportSize", info->width, info->height);
-			LineShader::ptr()->setUniformValue("u_thickness", GLfloat(info->lineWidth));
-			glEnable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(-1, -1);
-
-			linevao->bind();
-
-			for (int i = 0; i < boundDrawInfo_.size(); i++)
-				glDrawArrays(boundDrawInfo_[i].type, boundDrawInfo_[i].offset, boundDrawInfo_[i].size);
-			
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
-			LineShader::ptr()->release();
-		}
-		doAfterPaint(info);
 	}
 
 	std::unique_ptr<mcl::Primitive> PPolygonMesh::clone()

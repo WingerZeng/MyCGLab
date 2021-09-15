@@ -4,7 +4,6 @@
 #include "Geometry.h"
 #include "OcTree.h"
 namespace mcl {
-	//#BUG1 dining room 场景中，地板上有缝
 	class GTriangleMesh: public Geometry
 	{
 	public:

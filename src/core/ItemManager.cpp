@@ -82,6 +82,7 @@ namespace mcl{
 		std::shared_ptr<Primitive> newprim = std::move(items_[id].prim->clone());
 		newprim->copyAttribute(items_[id].prim);
 		addItem(newprim);
+		MAIPTR->getScene()->updateScene(Scene::PRIMITIVE);
 		return 0;
 	}
 
@@ -95,13 +96,16 @@ namespace mcl{
 			widget->setAttribute(Qt::WA_DeleteOnClose);
 			auto node = prim->getMaterialNode();
 			if (!node) return -1;
-			widget->init(node);
+			widget->init(prim);
 			widget->show();
 			return 0;
 		}
 		else {
 			auto prim = items_[id].prim;
-			return Material::inputToNode(remain, prim->getMaterialNode().get());
+			int ret = Material::inputToNode(remain, prim->getMaterialNode().get());
+			if (!ret)
+				prim->initMaterial();
+			return ret;
 		}
 	}
 
@@ -110,6 +114,7 @@ namespace mcl{
 		if (!isExist(id))
 			return -1;
 		items_[id].prim->appendLocalTransform(Transform::scale(factor));
+		MAIPTR->getScene()->updateScene(Scene::PRIMITIVE);
 		return 0;
 	}
 
@@ -118,6 +123,7 @@ namespace mcl{
 		if (!isExist(id))
 			return -1;
 		items_[id].prim->appendLocalTransform(Transform::rotate(axis, angle));
+		MAIPTR->getScene()->updateScene(Scene::PRIMITIVE);
 		return 0;
 	}
 
@@ -126,17 +132,16 @@ namespace mcl{
 		if (!isExist(id))
 			return -1;
 		items_[id].prim->appendLocalTransform(Transform::translate(vec));
+		MAIPTR->getScene()->updateScene(Scene::PRIMITIVE);
 		return 0;
 	}
 
 	int ItemManager::loadObj(PathString path)
 	{
 		if (!path.exist()) return -1;
-		std::vector<std::shared_ptr<Light>> lights;
 		std::vector<std::shared_ptr<Primitive>> prims;
-		readObj(QString::fromStdString(path.str), prims, lights);
+		readObj(QString::fromStdString(path.str), prims);
 		addItem(prims);
-		MAIPTR->getScene()->addLights(lights);
 		return 0;
 	}
 

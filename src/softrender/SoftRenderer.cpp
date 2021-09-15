@@ -181,7 +181,6 @@ namespace mcl {
 			needUpdate = Scene::UpdateReason(needUpdate | reason);
 		}
 		else {
-			lights = scene_->getLights();
 			if (reason & Scene::CAMERA) {
 				invViewMatrix = scene_->getCamera().getViewMatrix();
 				invViewMatrix = invViewMatrix.inverse();
@@ -205,9 +204,9 @@ namespace mcl {
 			//film_->setPixelColor(px, py, (info.normal + Normal3f(1))/2);
 			Color3f result(0);
 			for (const auto& light : lights) {
-				result += light->getAmbient();
-				Vector3f lightvec = Normalize(light->getPosition(invViewMatrix) - info.worldPos);
-				result += light->getDiffuse()*(std::clamp<Float>(info.normal.dot(Normal3f(lightvec)), 0, 1));
+				result += light->ambient();
+				Vector3f lightvec = Normalize(light->position() - info.worldPos);
+				result += light->emission()*(std::clamp<Float>(info.normal.dot(Normal3f(lightvec)), 0, 1));
 			}
 			result *= info.color;
 			if (result == Color3f(0)) {

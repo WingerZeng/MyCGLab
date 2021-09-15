@@ -3,6 +3,7 @@
 #include "ParameterInputWidget.h"
 #include "Material.h"
 #include "database.h"
+#include "Primitive.h"
 namespace mcl{
 	
 	MaterialSettingWidget::MaterialSettingWidget(QWidget* par)
@@ -24,8 +25,10 @@ namespace mcl{
 		delete ui;
 	}
 
-	void MaterialSettingWidget::init(std::shared_ptr<DataNode> data/*=nullptr*/)
+	void MaterialSettingWidget::init(std::shared_ptr<Primitive> prim/*=nullptr*/)
 	{
+		this->prim = prim;
+		std::shared_ptr<DataNode> data = prim->getMaterialNode();
 		initType(data->fd("type","")->getV());
 		datanode = data;
 		for (auto& widget : widgets) {
@@ -37,6 +40,10 @@ namespace mcl{
 		if (bumpnode) {
 			widgets["map_Bump"]->setParameter(bumpnode->getV());
 		}
+		auto lenode = data->fd("Le");
+		if (lenode) {
+			widgets["Le"]->setParameter(lenode->getV());
+		}
 	}
 
 	void MaterialSettingWidget::accept()
@@ -45,11 +52,16 @@ namespace mcl{
 		DataNode* parnode = datanode->fd("Pars", "").get();
 		parnode->clear();
 		for (const auto& widget : widgets) {
-			if(widget.second->getParameter() != "")
-				parnode->fd(widget.second->getName(), widget.second->getParameter());
+			if (widget.second->getParameter() != "") {
+				if (widget.second->getName() == "map_Bump")
+					datanode->setChild("map_Bump", widget.second->getParameter());
+				if (widget.second->getName() == "Le")
+					datanode->setChild("Le", widget.second->getParameter());
+				else
+					parnode->fd(widget.second->getName(), widget.second->getParameter());
+			}
 		}
-		auto bumpmapInput = widgets["map_Bump"]->getParameter();
-		datanode->setChild("map_Bump", bumpmapInput);
+		prim->initMaterial();
 		QDialog::accept();
 	}
 
@@ -109,6 +121,10 @@ namespace mcl{
 		ui->formLayout->addRow("map_Bump", bumpmapwidget);
 		widgets["map_Bump"] = bumpmapwidget;
 
+		//加入Le输入项
+		ParameterInputWidget* lewidget = new ColorInputWidget("Le");
+		ui->formLayout->addRow("Le", lewidget);
+		widgets["Le"] = lewidget;
 
 		initing = false;
 	}

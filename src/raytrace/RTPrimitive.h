@@ -6,8 +6,6 @@ namespace mcl {
 	class RTPrimitive
 	{
 	public:
-		//#TODO2 È±ÉÙÐéÎö¹¹º¯Êý
-
 		virtual SamplerRequestInfo getSamplerRequest() const;
 
 		virtual bool intersect(const Ray& ray, HitRecord* rec) = 0;

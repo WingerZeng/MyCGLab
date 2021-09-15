@@ -1,4 +1,5 @@
 #pragma once
+#ifdef USE_OPTIX
 #include "mcl.h"
 #include "types.h"
 #include "osc/CUDABuffer.h"
@@ -37,4 +38,6 @@ namespace mcl {
 		osc::CUDABuffer denoisedBuffer;
 	};
 }
+#endif // USE_OPTIX
+
 

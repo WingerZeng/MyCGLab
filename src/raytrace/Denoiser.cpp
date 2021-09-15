@@ -1,3 +1,4 @@
+#ifdef USE_OPTIX
 #include "Denoiser.h"
 #include "Film.h"
 #include <optix_function_table_definition.h>
@@ -203,3 +204,4 @@ namespace mcl{
 	}
 
 }
+#endif

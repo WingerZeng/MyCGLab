@@ -6,9 +6,42 @@
 #include "materials/Lambertain.h"
 namespace mcl {
 
+mcl::Bound3f Primitive::getBound()
+{
+	LOG(FATAL) << "Unimplemented method!";
+}
+
 void Primitive::copyAttribute(std::shared_ptr<Primitive> other)
 {
 	setLocalTransform(other->localTransform());
+}
+
+void Primitive::initMaterial()
+{
+	LOG(FATAL) << "unimplemented method!";
+}
+
+mcl::Transform Primitive::totTransform() const
+{
+	if (!father)
+		return localTransform();
+	else
+		return father->localTransform() * localTransform();
+}
+
+void Primitive::initAll()
+{
+	initializeGL();
+}
+
+void Primitive::paint(PaintInfomation* info, PaintVisitor* visitor)
+{
+	LOG(FATAL) << "unimplemented method!";
+}
+
+void Primitive::initialize(PaintVisitor* visitor)
+{
+	LOG(FATAL) << "unimplemented method!";
 }
 
 std::unique_ptr<mcl::Primitive> Primitive::clone()
@@ -25,6 +58,7 @@ void GeometryPrimitive::copyAttribute(std::shared_ptr<Primitive> other)
 	auto geo = std::dynamic_pointer_cast<GeometryPrimitive>(other);
 	if(geo)
 		setColor(geo->color());
+	geo->setMaterialData(this->mtdata->clone());
 }
 
 void GeometryPrimitive::setSelected(bool selected)
@@ -40,23 +74,26 @@ void GeometryPrimitive::setSelected(bool selected)
 	Primitive::setSelected(selected);
 }
 
-void GeometryPrimitive::doBeforePaint(PaintInfomation* info)
+void GeometryPrimitive::setMaterialData(const std::shared_ptr<DataNode> data)
 {
-	if (selected()) {
-		this->glEnable(GL_POLYGON_OFFSET_FILL);
-		this->glPolygonOffset(-1, -1);
-	}
-	tempTrans_ = info->viewMat;
-	info->viewMat = info->viewMat * localTransform().toQMatrix();
+	mtdata = data;
+	initMaterial();
 }
 
-void GeometryPrimitive::doAfterPaint(PaintInfomation* info)
+std::shared_ptr<mcl::Material> GeometryPrimitive::getMaterial()
 {
-	if (selected()) {
-		this->glDisable(GL_POLYGON_OFFSET_FILL);
-		this->glPolygonOffset(0, 0);
+	if (!mat) {
+		mat = getDefaultMaterial();
 	}
-	info->viewMat = tempTrans_;
+	return mat;
+}
+
+std::shared_ptr<mcl::Material> GeometryPrimitive::getDefaultMaterial()
+{
+	auto matnode = getMaterialNode();
+	matnode->clear();
+	Material::inputToNode("Lambertain 0.7,0.7,0.7 \"\"", matnode.get());
+	return Material::createMaterial(matnode.get());
 }
 
 std::shared_ptr<mcl::RTPrimitive> GeometryPrimitive::createRTPrimitive()
@@ -81,9 +118,9 @@ std::shared_ptr<mcl::RTPrimitive> GeometryPrimitive::createRTPrimitive()
 
 std::shared_ptr<DataNode> GeometryPrimitive::getMaterialNode()
 {
-	if (!rtdata)
-		rtdata = std::make_shared<DataNode>();
-	return rtdata->fd("Mat", "");
+	if (!mtdata)
+		mtdata = std::make_shared<DataNode>();
+	return mtdata->fd("Mat", "");
 }
 
 std::shared_ptr<mcl::Geometry> GeometryPrimitive::createGeometry()
@@ -93,13 +130,13 @@ std::shared_ptr<mcl::Geometry> GeometryPrimitive::createGeometry()
 
 void GeometryPrimitive::createMaterialAndLight(std::shared_ptr<Material>& mat, std::shared_ptr<RTSurfaceLight>& light)
 {
-	if (!rtdata) {
+	if (!mtdata && !this->mat) {
 		mat = std::make_shared<LambertainMaterial>(color());
 		light = nullptr;
 		return;
 	}
 
-	auto le = rtdata->fd("Le");
+	auto le = mtdata->fd("Mat", "")->fd("Le");
 	if (le && le->toVector3f().length() > FloatZero) {
 		light = std::make_shared<RTSurfaceLight>(le->toVector3f(), createGeometry(),false);
 		light->setBackground(Color3f(0, 0, 0));
@@ -108,7 +145,17 @@ void GeometryPrimitive::createMaterialAndLight(std::shared_ptr<Material>& mat, s
 	{
 		light = nullptr;
 	}
-	mat = Material::createMaterial(rtdata->fd("Mat").get());
+	mat = this->mat;
 }
 
+void GeometryPrimitive::initMaterial()
+{
+	mat = Material::createMaterial(mtdata->fd("Mat").get());
+}
+
+void GeometryPrimitive::initAll()
+{
+	initializeGL();
+	mat->initGL();
+}
 }

@@ -17,7 +17,7 @@ namespace mcl {
 	public:
 		MaterialSettingWidget(QWidget* par = nullptr);
 		~MaterialSettingWidget();
-		void init(std::shared_ptr<DataNode> data=nullptr);
+		void init(std::shared_ptr<Primitive> prim);
 
 	public Q_SLOTS:
 		virtual void accept();
@@ -30,6 +30,7 @@ namespace mcl {
 	private:
 		std::map<QString, ParameterInputWidget*> widgets;
 		std::shared_ptr<DataNode> datanode;
+		std::shared_ptr<Primitive> prim;
 		Ui::MaterialSettingWidget* ui;
 		bool initing = false;
 	};

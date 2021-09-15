@@ -13,8 +13,16 @@ namespace mcl {
 		PPoint(const Point3f& coord)
 			:cd{coord.x(),coord.y(),coord.z()}{}
 		~PPoint();
-		virtual void initialize() override;
-		virtual void paint(PaintInfomation* info) override;
+		virtual void initializeGL() override;
+
+
+		virtual void paint(PaintInfomation* info, PaintVisitor* visitor) override;
+
+
+		virtual void initialize(PaintVisitor* visitor) override;
+
+		QOpenGLVertexArrayObject& getVAO() { return vao; }
+		QOpenGLBuffer& getVBO() { return vbo; }
 
 	private:
 		Point3f coord_; // #PERF1 这个成员可以改成指针，用完释放

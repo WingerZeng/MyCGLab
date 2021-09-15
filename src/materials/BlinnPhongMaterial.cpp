@@ -12,6 +12,9 @@ namespace mcl{
 		kd = getColorTexture("Kd", data);
 		ks = getColorTexture("Ks", data);
 		ns = getFloatTexture("Ns", data);
+		kdtype = getColorTexture("Kd", data, kd_vec, kd_map);
+		kstype = getColorTexture("Ks", data, ks_vec, ks_map);
+		nstype = getFloatTexture("Ns", data, ns_float, ns_map);
 	}
 
 	std::unique_ptr<mcl::BsdfGroup> BlinnPhongMaterial::getBsdfs(HitRecord* rec, Sampler& sampler) const
@@ -26,6 +29,28 @@ namespace mcl{
 	mcl::SamplerRequestInfo BlinnPhongMaterial::getSamplerRequest() const
 	{
 		return SamplerRequestInfo(0, 1);
+	}
+
+	void BlinnPhongMaterial::initGL()
+	{
+		//#TODO1 初始化纹理
+	}
+
+	void BlinnPhongMaterial::prepareGL(QOpenGLShaderProgram* shader)
+	{
+		//#TODO1 装载纹理
+		shader->setUniformValue("Le", QVector4D(QVector3D(getEmission()),1));
+		shader->setUniformValue("MatType", (GLint)_type);
+		if (kdtype & P_Color) {
+			shader->setUniformValue("ourColor", kd_vec);
+			shader->setUniformValue("Kd", kd_vec);
+		}
+		if (kstype & P_Color) {
+			shader->setUniformValue("Ks", ks_vec);
+		}
+		if (nstype & P_Float) {
+			shader->setUniformValue("Ns", ns_float);
+		}
 	}
 
 	BlinnPhongBsdf::BlinnPhongBsdf(const Color3f& kd, const Color3f& ks, const Float& ns)
