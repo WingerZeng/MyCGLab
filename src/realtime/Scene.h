@@ -3,7 +3,7 @@
 #include <set>
 #include "mcl.h"
 #include <QtWidgets/QOpenGLWidget>
-#include <QtGui/QOpenGLFunctions_3_3_Core>
+#include <QtGui/QOpenGLFunctions_4_3_Core>
 #include <QVector3D>
 #include "axis.h"
 #include "camera.h"
@@ -99,6 +99,12 @@ namespace mcl {
 		int rbo;
 
 		std::shared_ptr<PaintVisitor> painter;
+		std::shared_ptr<GammaPaintVisitor> gammaCorrector;
+		std::shared_ptr<GLFrameBufferObject> fbo1;
+		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
+		std::shared_ptr<PTriMesh> billboard;
+
+		const int sampleRate = 16;
 	};
 
 	template<class T>

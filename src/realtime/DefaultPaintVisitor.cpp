@@ -8,7 +8,7 @@
 #include "shaders.h"
 #include "Material.h"
 namespace mcl{
-	
+	//#TODO1 info可以优化为栈模式
 	int DefaultPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	{
 		//do before paint
@@ -26,6 +26,9 @@ namespace mcl{
 			QOpenGLShaderProgram* shader;
 			shader = LightPerFragShader::ptr();
 			shader->bind();
+
+			info->hasNormal = tri->hasNormal();
+
 			info->setUniformValue(shader);
 			tri->getMaterial()->prepareGL(shader);
 
@@ -36,6 +39,7 @@ namespace mcl{
 			glDisable(GL_POLYGON_OFFSET_FILL);
 			glPolygonOffset(0, 0);
 
+			info->hasNormal = false;
 			shader->release();
 		}
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {
@@ -45,7 +49,7 @@ namespace mcl{
 			glEnable(GL_POLYGON_OFFSET_FILL);
 			glPolygonOffset(-1, -1);
 
-			tri->getVAO()->bind();
+			tri->getLineVAO()->bind();
 
 			glDrawArrays(GL_LINES, 0, tri->getEdgeNumber() * 2);
 
@@ -65,9 +69,6 @@ namespace mcl{
 
 	int DefaultPaintVisitor::initTris(PTriMesh* tri)
 	{
-		tri->initialize(CommonShader::ptr());
-		tri->initialize(LightPerFragShader::ptr());
-		tri->initializeLine(LineShader::ptr());
 		return 0;
 	}
 
@@ -102,6 +103,7 @@ namespace mcl{
 		return 0;
 	}
 
+	//#TODO0 这些顶点属性的设置全部放到VAO初始化过程中
 	int DefaultPaintVisitor::initPoint(PPoint* point)
 	{
 		PointShader::ptr()->setAttributeBuffer(0, GL_FLOAT, 0, 3, 0);

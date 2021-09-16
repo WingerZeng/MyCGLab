@@ -35,24 +35,32 @@ namespace mcl {
 		virtual void initialize(PaintVisitor* visitor) override;
 		
 		std::shared_ptr<QOpenGLVertexArrayObject> getVAO();
-		std::shared_ptr<QOpenGLBuffer> getVBO();
-		std::shared_ptr<QOpenGLBuffer> getLineVBO();
+		std::shared_ptr<QOpenGLVertexArrayObject> getLineVAO();
 
 		int getTriNumer();
 
 		int getEdgeNumber();
 
+		bool hasNormal() { return !normals.empty(); }
+
+		static std::unique_ptr<PTriMesh> createBillBoard();
 	private:
 		
 		std::vector<int> tris_;
 		std::vector<Float> pts_;
-		std::vector<Float> linepts_;
 
 		std::vector<Point2f> uvs;
 		std::vector<Normal3f> normals;
 
+		std::unique_ptr<Float[]>  rawPts;//将pts和indices合并
+		std::unique_ptr<Float[]>  rawUvs;
+		std::unique_ptr<Float[]>  rawNormals;
+		std::unique_ptr<Float[]>  linepts_;
+		int nEgs;
+
 		std::shared_ptr<QOpenGLBuffer> vbo;
 		std::shared_ptr<QOpenGLBuffer> linevbo;
 		std::shared_ptr<QOpenGLVertexArrayObject> vao;
+		std::shared_ptr<QOpenGLVertexArrayObject> linevao;
 	};
 }

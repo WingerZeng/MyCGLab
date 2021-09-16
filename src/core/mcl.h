@@ -12,7 +12,7 @@
 #include <vector>
 #include <assert.h>
 #include <string.h>
-#include <QOpenGLFunctions_3_3_Core>
+#include <QOpenGLFunctions_4_3_Core>
 
 #ifndef BUILD_STATIC
 # if defined(GLWIDGET_LIB)
@@ -25,7 +25,7 @@
 #endif
 
 //Global Definition
-#define OPENGLCLASS QOpenGLFunctions_3_3_Core
+#define OPENGLCLASS QOpenGLFunctions_4_3_Core
 
 //#define FLOAT_AS_DOUBLE
 #pragma warning(disable:4267)
@@ -64,6 +64,7 @@ namespace mcl {
 	class PTriMesh;
 	class Light;
 	class PaintVisitor;
+	class GammaPaintVisitor;
 	class PaintInfomation;
 	class Camera;
 	class PPoint;
@@ -80,6 +81,8 @@ namespace mcl {
 	class RTScene;
 	class Film;
 	struct HitRecord;
+	class GLFrameBufferObject;
+	class GLMultiSampleFrameBufferObject;
 	struct SurfaceRecord;
 	class Material;
 	class Bsdf;

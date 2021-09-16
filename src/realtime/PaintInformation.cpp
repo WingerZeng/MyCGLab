@@ -14,6 +14,7 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader)
 	shader->setUniformValue("pointSize", GLfloat(pointSize));
 	shader->setUniformValue("selected", GLint(selected));
 	shader->setUniformValue("selectedColor", QVector3D(selectedColor));
+	shader->setUniformValue("hasNormal", hasNormal);
 
 	for (int j = 0; j < lights.size(); j++) {
 		lights[j]->setUniformValue(shader, j);

@@ -156,6 +156,7 @@ void GeometryPrimitive::initMaterial()
 void GeometryPrimitive::initAll()
 {
 	initializeGL();
-	mat->initGL();
+	if(mat)
+		mat->initGL();
 }
 }

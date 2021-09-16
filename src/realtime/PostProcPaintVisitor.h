@@ -5,13 +5,19 @@
 namespace mcl {
 	class PostProcPaintVisitor: public PaintVisitor
 	{
-	public:
-		PostProcPaintVisitor() {};
 	};
 
 	class GammaPaintVisitor : public PostProcPaintVisitor
 	{
+	public:
+		GammaPaintVisitor(GLfloat gamma = 2.2);
 
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+
+		virtual int initTris(PTriMesh* tri) override;
+
+	private:
+		GLfloat gamma;
 	};
 }
 

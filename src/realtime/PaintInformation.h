@@ -25,6 +25,7 @@ namespace mcl {
 		double pointSize;
 		double width,height;
 		bool selected = false;
+		bool hasNormal = false;
 		Color3f selectedColor = Color3f(1,0,0);
 		void setUniformValue(QOpenGLShaderProgram* shader);
 	};

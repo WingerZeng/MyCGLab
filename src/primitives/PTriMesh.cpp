@@ -27,14 +27,17 @@ namespace mcl{
 				egs.insert(std::make_pair(p1, p2));
 			}
 		}
+		linepts_.reset(new Float[egs.size() * 6]);
+		int idx = 0;
 		for (auto it = egs.begin(); it != egs.end(); it++) {
-			linepts_.push_back(pts_[3 * it->first + 0]);
-			linepts_.push_back(pts_[3 * it->first + 1]);
-			linepts_.push_back(pts_[3 * it->first + 2]);
-			linepts_.push_back(pts_[3 * it->second + 0]);
-			linepts_.push_back(pts_[3 * it->second + 1]);
-			linepts_.push_back(pts_[3 * it->second + 2]);
+			linepts_[idx++] = (pts_[3 * it->first + 0]);
+			linepts_[idx++] = (pts_[3 * it->first + 1]);
+			linepts_[idx++] = (pts_[3 * it->first + 2]);
+			linepts_[idx++] = (pts_[3 * it->second + 0]);
+			linepts_[idx++] = (pts_[3 * it->second + 1]);
+			linepts_[idx++] = (pts_[3 * it->second + 2]);
 		}
+		nEgs = egs.size();
 	}
 
 	PTriMesh::PTriMesh(const std::vector<int>& tris, const std::vector<Point3f>& pts, const std::vector<Point2f>& uvs, const std::vector<Normal3f>& normals)
@@ -58,14 +61,17 @@ namespace mcl{
 				egs.insert(std::make_pair(p1, p2));
 			}
 		}
+		linepts_.reset(new Float[egs.size() * 6]);
+		int idx = 0;
 		for (auto it = egs.begin(); it != egs.end(); it++) {
-			linepts_.push_back(pts_[3 * it->first + 0]);
-			linepts_.push_back(pts_[3 * it->first + 1]);
-			linepts_.push_back(pts_[3 * it->first + 2]);
-			linepts_.push_back(pts_[3 * it->second + 0]);
-			linepts_.push_back(pts_[3 * it->second + 1]);
-			linepts_.push_back(pts_[3 * it->second + 2]);
+			linepts_[idx++] = (pts_[3 * it->first + 0]);
+			linepts_[idx++] = (pts_[3 * it->first + 1]);
+			linepts_[idx++] = (pts_[3 * it->first + 2]);
+			linepts_[idx++] = (pts_[3 * it->second + 0]);
+			linepts_[idx++] = (pts_[3 * it->second + 1]);
+			linepts_[idx++] = (pts_[3 * it->second + 2]);
 		}
+		nEgs = egs.size();
 	}
 
 	void PTriMesh::initializeGL()
@@ -80,58 +86,55 @@ namespace mcl{
 
 		vbo->create();
 		vbo->bind();
-
-		std::vector<Float> allpts; //将pts和indices合并
-		for (const auto idx : tris_) {
-			allpts.push_back(pts_[3 * idx + 0]);
-			allpts.push_back(pts_[3 * idx + 1]);
-			allpts.push_back(pts_[3 * idx + 2]);
-		}
-
-		std::vector<Float> tempuvs;
-		for (const auto uv : uvs) {
-			tempuvs.push_back(uv[0]);
-			tempuvs.push_back(uv[1]);
-		}
 		
-		std::vector<Float> tempnormals;
-		for (const auto normal : normals) {
-			tempnormals.push_back(normal[0]);
-			tempnormals.push_back(normal[1]);
-			tempnormals.push_back(normal[2]);
+		rawPts.reset(new Float[tris_.size() * 3]);
+		for (int i = 0; i < tris_.size(); i++) {
+			rawPts[3 * i] = (pts_[3 * tris_[i] + 0]);
+			rawPts[3 * i + 1] = (pts_[3 * tris_[i] + 1]);
+			rawPts[3 * i + 2] = (pts_[3 * tris_[i] + 2]);
+		}
+
+		rawUvs.reset(new Float[uvs.size() * 2]);
+		for (int i = 0; i < uvs.size(); i++) {
+			rawUvs[2 * i + 0] = (uvs[i][0]);
+			rawUvs[2 * i + 1] = (uvs[i][1]);
+		}
+
+		rawNormals.reset(new Float[normals.size() * 3]);
+		for (int i = 0; i < normals.size(); i++) {
+			rawNormals[3 * i] = normals[i][0];
+			rawNormals[3 * i + 1] = normals[i][1];
+			rawNormals[3 * i + 2] = normals[i][2];
 		}
 
 		//导入面片顶点数据
-		auto totsize = (allpts.size() + tempuvs.size() + tempnormals.size()) * sizeof(Float);
-		glBufferData(GL_ARRAY_BUFFER, totsize, nullptr, GL_STATIC_DRAW);
+		auto totsize = (tris_.size() * 3 + uvs.size() * 2 + normals.size() * 3) * sizeof(Float);
+		glBufferData(GL_ARRAY_BUFFER, tris_.size() * 3 * sizeof(Float), rawPts.get(), GL_STATIC_DRAW);
+		this->glBufferData(GL_ARRAY_BUFFER, totsize,nullptr , GL_STATIC_DRAW);
 		GLintptr offset1 = 0;
-		glBufferSubData(GL_ARRAY_BUFFER, offset1, allpts.size() * sizeof(Float), &allpts[0]);
-		GLintptr offset2 = allpts.size() * sizeof(Float);
-		glBufferSubData(GL_ARRAY_BUFFER, offset2, tempnormals.size() * sizeof(Float), &tempnormals[0]);
-		GLintptr offset3 = offset2 + tempnormals.size() * sizeof(Float);
-		glBufferSubData(GL_ARRAY_BUFFER, offset3, tempuvs.size() * sizeof(Float), &tempuvs[0]);
+		this->glBufferSubData(GL_ARRAY_BUFFER, offset1, tris_.size() * 3 * sizeof(Float), &rawPts[0]);
+		GLintptr offset2 = tris_.size() * 3 * sizeof(Float);
+		this->glBufferSubData(GL_ARRAY_BUFFER, offset2, normals.size() * 3 * sizeof(Float), &rawNormals[0]);
+		GLintptr offset3 = offset2 + normals.size() * 3 * sizeof(Float);
+		this->glBufferSubData(GL_ARRAY_BUFFER, offset3, uvs.size() * 2 * sizeof(Float), &rawUvs[0]);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), (void*)(sizeof(Float) * tris_.size() * 3));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Float), (void*)(sizeof(Float) * (tris_.size() + normals.size()) * 3));
+		glEnableVertexAttribArray(2);
 
 		//导入边顶点数据
+		linevao = std::make_shared<QOpenGLVertexArrayObject>();
+		linevao->create();
+		linevao->bind();
 		linevbo = std::make_shared<QOpenGLBuffer>();
 		linevbo->create();
 		linevbo->bind();
-		glBufferData(GL_ARRAY_BUFFER, linepts_.size() * sizeof(Float), &linepts_[0], GL_STATIC_DRAW);
-
-	}
-
-	void PTriMesh::initialize(QOpenGLShaderProgram* shader)
-	{
-		vao->bind();
-		vbo->bind();
-		shader->bind();
+		glBufferData(GL_ARRAY_BUFFER, nEgs * 6 * sizeof(Float), &linepts_[0], GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
-		shader->enableAttributeArray(0);
-		
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), (void*)(sizeof(Float) * tris_.size() * 3));
-		shader->enableAttributeArray(1);
-
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Float), (void*)(sizeof(Float) * (tris_.size() + normals.size()) * 3));
-		shader->enableAttributeArray(2);
+		glEnableVertexAttribArray(0);
 	}
 
 	void PTriMesh::initialize(PaintVisitor* visitor)
@@ -144,13 +147,9 @@ namespace mcl{
 		return vao;
 	}
 
-	void PTriMesh::initializeLine(QOpenGLShaderProgram* shader)
+	std::shared_ptr<QOpenGLVertexArrayObject> PTriMesh::getLineVAO()
 	{
-		vao->bind();
-		linevbo->bind();
-		shader->bind();
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
-		shader->enableAttributeArray(0);
+		return linevao;
 	}
 
 	void PTriMesh::paint(PaintInfomation* info, PaintVisitor* visitor)
@@ -208,16 +207,6 @@ namespace mcl{
 		//#TODO0
 	}
 
-	std::shared_ptr<QOpenGLBuffer> PTriMesh::getVBO()
-	{
-		return vbo;
-	}
-
-	std::shared_ptr<QOpenGLBuffer> PTriMesh::getLineVBO()
-	{
-		return linevbo;
-	}
-
 	int PTriMesh::getTriNumer()
 	{
 		return getIndices().size() / 3;
@@ -225,7 +214,15 @@ namespace mcl{
 
 	int PTriMesh::getEdgeNumber()
 	{
-		return linepts_.size() / 6;
+		return nEgs;
+	}
+
+	std::unique_ptr<PTriMesh> PTriMesh::createBillBoard()
+	{
+		std::vector<int> tris{0,1,2};
+		std::vector<Point3f> pts{ Point3f{-1,-1,0}, Point3f{3,-1,0}, Point3f{-1,3,0} };
+		std::vector<Point2f> uvs{ Point2f{0,0}, Point2f{2,0}, Point2f{0,2} };
+		return std::make_unique<PTriMesh>(tris, pts, uvs, std::vector<Normal3f>{Normal3f(), Normal3f(), Normal3f()});
 	}
 
 }

@@ -27,7 +27,7 @@ namespace mcl {
 	private:
 		T val;
 	};
-
+	//#TODO0 reverse Gamma
 	class PixelMapTexture:public Texture<Color3f>
 	{
 	public:

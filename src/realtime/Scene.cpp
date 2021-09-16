@@ -10,6 +10,8 @@
 #include "Film.h"
 #include "Sampler.h"
 #include "RayTracer.h"
+#include "GLFrameBufferObject.h"
+#include "PTriMesh.h"
 #include "RTScene.h"
 #include "ToneMapper.h"
 #include "material.h"
@@ -20,21 +22,18 @@
 #include "ui/Console.h"
 #include "ui/MainWindow.h"
 #include "DefaultPaintVisitor.h"
+#include "PostProcPaintVisitor.h"
 
 namespace mcl {
 Scene::Scene(QWidget* parent)
 	: QOpenGLWidget(parent)
 {
 	QSurfaceFormat format;
-#ifdef _DEBUG
 	//输出调试信息
-	format.setMajorVersion(3);
+	format.setMajorVersion(4);
 	format.setMinorVersion(3);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	format.setOption(QSurfaceFormat::DebugContext);
-#endif
-	//采样倍数
-	format.setSamples(16);
 	this->setFormat(format);
 	wfmode_ = true;
 
@@ -58,6 +57,7 @@ void Scene::initializeGL()
 	this->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 	this->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	painter = getDafaultPainter();
+	gammaCorrector = std::make_shared<GammaPaintVisitor>();
 
 	//相机初始化
 	camera->initialize(width(), height());
@@ -67,12 +67,14 @@ void Scene::initializeGL()
 	axis.updateViewMat(camera->getViewMatrixForAxis());
 	axis.updateProjMat(camera->getProjMatrixForAxis());
 
+	billboard = PTriMesh::createBillBoard();
+	billboard->initAll();
+	fbo1 = std::make_shared<GLFrameBufferObject>();
+	msfbo = std::make_shared<GLMultiSampleFrameBufferObject>(sampleRate);
 	doPrimAdd();
 
-#ifdef _DEBUG
 	logger = new QOpenGLDebugLogger(this);
 	logger->initialize();
-#endif
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(repaint()));
@@ -83,16 +85,17 @@ void Scene::resizeGL(int w, int h)
 {
 	this->glViewport(0, 0, w, h);
 	camera->initialize(w, h);
+	fbo1->resize(h, w);
+	msfbo->resize(h, w);
 }
 
 void Scene::paintGL()
 {
+	msfbo->bind();
 	this->glEnable(GL_DEPTH_TEST);
 	this->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#ifdef DEBUG
 	debugOpenGL();
-#endif // DEBUG
 
 	doPrimAdd();
 
@@ -118,6 +121,13 @@ void Scene::paintGL()
 	axis.updateViewMat(camera->getViewMatrixForAxis());
 	axis.updateProjMat(camera->getProjMatrixForAxis());
 	axis.paint();
+
+	msfbo->copyToFbo(fbo1->fboId());
+	//Gamma 校正
+	glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fbo1->textureId());
+	billboard->paint(&info, gammaCorrector.get());
 }
 
 void Scene::mouseMoveEvent(QMouseEvent *ev)
@@ -226,11 +236,9 @@ void Scene::delPrimitive(int id)
 
 void Scene::debugOpenGL()
 {
-#ifdef _DEBUG
 	const QList<QOpenGLDebugMessage> messages = logger->loggedMessages();
 	for (const QOpenGLDebugMessage &message : messages)
 		qDebug() << message;
-#endif
 }
 
 int Scene::wireFrameMode(bool wfmode)

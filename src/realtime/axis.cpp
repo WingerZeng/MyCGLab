@@ -1,7 +1,7 @@
 #include "axis.h"
 
 const char *vertexShaderSourceForAxis =
-        "#version 330 core\n"
+        "#version 430 core\n"
         "layout(location = 0) in vec3 aPos;\n"
         "uniform mat4 modelMat;\n"
         "uniform mat4 viewMat;\n"
@@ -11,7 +11,7 @@ const char *vertexShaderSourceForAxis =
         "}\n\0";
 
 const char *fragmentShaderSourceForAxis =
-        "#version 330 core\n"
+        "#version 430 core\n"
         "uniform vec4 axisColor;\n"
         "out vec4 FragColor;\n"
         "void main(){\n"
@@ -19,7 +19,7 @@ const char *fragmentShaderSourceForAxis =
         "}\n\0";
 
 const char *vertexShaderSourceForText =
-        "#version 330 core\n"
+        "#version 430 core\n"
         "layout(location = 1) in vec3 aPos;\n"
         "uniform mat4 modelMat;\n"
         "uniform mat4 viewMat;\n"
@@ -29,7 +29,7 @@ const char *vertexShaderSourceForText =
         "}\n\0";
 
 const char *fragmentShaderSourceForText =
-        "#version 330 core\n"
+        "#version 430 core\n"
         "uniform vec4 textColor;\n"
         "out vec4 FragColor;\n"
         "void main(){\n"

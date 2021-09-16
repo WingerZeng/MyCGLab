@@ -105,7 +105,6 @@ namespace mcl {
 				info.color = curPlg->prim->color();
 				//更新活化边
 				while (getPlgMinY(curPlg.get()) == y) {
-					//#TEST 检查splice是否只移除一个
 					curPlg->activeEdges.splice(curPlg->activeEdges.end(), curPlg->edges, curPlg->edges.begin());
 				}
 				curPlg->activeEdges.sort([](const std::unique_ptr<RasPlgEdge>& e1, const std::unique_ptr<RasPlgEdge>& e2) {

@@ -1,7 +1,7 @@
 #version 430 core
 out vec4 FragColor;
-in vec3 texCoord;
-uniform Sampler2D frame;
+in vec2 texCoord;
+uniform sampler2D frame;
 uniform float gamma = 2.2;
 
 void main(){
