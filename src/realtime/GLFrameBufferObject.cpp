@@ -45,7 +45,7 @@ namespace mcl {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
 		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8, width, height);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tbo, 0);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
@@ -99,7 +99,7 @@ namespace mcl {
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mstbo);
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nsample, GL_RGB, width, height, GL_TRUE);
 		glBindRenderbuffer(GL_RENDERBUFFER, msrbo);
-		glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsample, GL_DEPTH24_STENCIL8, width, height);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsample, GL_DEPTH32F_STENCIL8, width, height);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, mstbo, 0);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, msrbo);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);

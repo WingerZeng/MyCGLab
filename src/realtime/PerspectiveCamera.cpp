@@ -12,7 +12,7 @@ namespace mcl{
 	QMatrix4x4 PerspectiveCamera::getProjMatrix()
 	{
 		QMatrix4x4 proj;
-		proj.perspective(fov, width / height, 0.00001, 1e4);
+		proj.perspective(fov, width / height, 0.1, 1e3);
 		return proj;
 	}
 
