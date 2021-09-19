@@ -17,6 +17,6 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader)
 	shader->setUniformValue("hasNormal", hasNormal);
 
 	for (int j = 0; j < lights.size(); j++) {
-		lights[j]->setUniformValue(shader, j);
+		lights[j]->bind(shader, j);
 	}
 }

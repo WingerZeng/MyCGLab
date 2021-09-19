@@ -52,6 +52,9 @@ namespace mcl {
 	class Transform;
 	class PixelData;
 
+	typedef GLuint GLTexture;
+	typedef GLuint GLCubeTexture; //#TODO1 之后封装成类
+
 	class Scene;
 	class bpSolid;
 	class bpFace;
