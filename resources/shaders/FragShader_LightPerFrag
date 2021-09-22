@@ -9,14 +9,45 @@ vec3 pos;
 vec3 ambient; 
 vec3 bound[2];
 vec3 emission;
+bool castShadow;
+float farPlane;
+float nearPlane;
+float shadowOffset;
+samplerCube shadowMap;
 };
 uniform Light lights[10];
 uniform int lightCount;
 
+vec3 calEmissionIn(int idx){
+	vec3 lightVec = aWorldPos - lights[idx].pos;
+	float dist = max(length(lightVec),0.001);
+	if(dist<=0.0001){
+		return lights[idx].emission;
+	}
+	vec3 normLightVec = normalize(lightVec);
+	vec3 ret = vec3(0);
+	for(int i=0;i<3;i++){
+		float cosi = abs(normLightVec[i]);
+		int j = (i+1)%3;
+		int k = (i+2)%3;
+		float area = (lights[idx].bound[1][j] - lights[idx].bound[0][j])*(lights[idx].bound[1][k] - lights[idx].bound[0][k]);
+		ret += lights[idx].emission * area * cosi / (dist * dist);
+	}
+	return ret;
+}
+
 void main(){
 	FragColor += Le;
+
 	for(int i=0;i<lightCount;i++){
-		vec3 totLight = lights[i].ambient+max(dot(aNormal,normalize(lights[i].pos-aWorldPos)),0)*lights[i].emission;
+		vec3 lightVec = aWorldPos - lights[i].pos;
+		float dReceiver = length(lightVec);
+		float dBlocker = texture(lights[i].shadowMap, lightVec).r;
+		dBlocker = dBlocker * (lights[i].farPlane - lights[i].nearPlane) + lights[i].nearPlane;
+		vec3 totLight = lights[i].ambient;
+		if(dBlocker > dReceiver - lights[i].shadowOffset){
+			totLight += max(dot(aNormal,normalize(lights[i].pos-aWorldPos)),0)*calEmissionIn(i);
+		}
 		FragColor += ourColor*(vec4(totLight,1.0)); 
-	}
+	} 
 }

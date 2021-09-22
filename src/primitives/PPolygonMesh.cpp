@@ -116,8 +116,6 @@ namespace mcl{
 
 	void PPolygonMesh::initializeGL()
 	{
-		this->initializeOpenGLFunctions();
-
 		if (tessPts_.empty()) 
 			return;
 

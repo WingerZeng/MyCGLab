@@ -1,5 +1,5 @@
 #include "axis.h"
-
+#include "GLFunctions.h"
 const char *vertexShaderSourceForAxis =
         "#version 430 core\n"
         "layout(location = 0) in vec3 aPos;\n"
@@ -51,8 +51,6 @@ void Axis::initialize()
 {
     modelMatX.rotate(90.0f,QVector3D(0,0,-1));
     modelMatZ.rotate(90.0f,QVector3D(1,0,0));
-
-    this->initializeOpenGLFunctions();
 
     //Shader
     bool success = axisShaderProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSourceForAxis);
@@ -286,7 +284,8 @@ void Axis::initialize()
 
 void Axis::paint()
 {
-    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+	mcl::GLFunctions::getSingletonPtr()->glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	GLFUNC->glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 
     //绘制箭头
     axisShaderProgram.bind();
@@ -297,15 +296,15 @@ void Axis::paint()
 
     axisShaderProgram.setUniformValue("axisColor",0.9f,0.0f,0.0f,1.0f);
     axisShaderProgram.setUniformValue("modelMat",modelMatX);
-    glDrawArrays(GL_TRIANGLES, 0, 66);
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, 66);
 
     axisShaderProgram.setUniformValue("axisColor",0.0f,0.8f,0.0f,1.0f);
     axisShaderProgram.setUniformValue("modelMat",modelMatY);
-    glDrawArrays(GL_TRIANGLES, 0, 66);
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, 66);
 
     axisShaderProgram.setUniformValue("axisColor",0.0f,0.0f,1.0f,1.0f);
     axisShaderProgram.setUniformValue("modelMat",modelMatZ);
-    glDrawArrays(GL_TRIANGLES, 0, 66);
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, 66);
 
     axisShaderProgram.release();
 
@@ -317,15 +316,15 @@ void Axis::paint()
 
 //    textShaderProgram.setUniformValue("textColor",0.9f,0.0f,0.0f,1.0f);
     textShaderProgram.setUniformValue("modelMat",modelMatX);
-    glDrawArrays(GL_TRIANGLES, 0, 12);
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, 12);
 
 //    textShaderProgram.setUniformValue("textColor",0.0f,0.8f,0.0f,1.0f);
     textShaderProgram.setUniformValue("modelMat",modelMatY);
-    glDrawArrays(GL_TRIANGLES, 12, 21);
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 12, 21);
 
 //    textShaderProgram.setUniformValue("textColor",0.0f,0.0f,1.0f,1.0f);
     textShaderProgram.setUniformValue("modelMat",modelMatZ);
-    glDrawArrays(GL_TRIANGLES, 33, 18);
+    GLFUNC->glDrawArrays(GL_TRIANGLES, 33, 18);
 
     textShaderProgram.release();
 }

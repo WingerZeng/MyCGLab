@@ -22,7 +22,9 @@
 #include "ui/Console.h"
 #include "ui/MainWindow.h"
 #include "DefaultPaintVisitor.h"
+#include "CubeShadowMapPaintVisitor.h"
 #include "PostProcPaintVisitor.h"
+#include "GLFunctions.h"
 
 namespace mcl {
 Scene::Scene(QWidget* parent)
@@ -52,10 +54,10 @@ Scene::~Scene()
 
 void Scene::initializeGL()
 {
-	this->initializeOpenGLFunctions();
+	GLFUNC->initializeOpenGLFunctions();
 
-	this->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
-	this->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLFUNC->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
+	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	painter = getDafaultPainter();
 	gammaCorrector = std::make_shared<GammaPaintVisitor>();
 
@@ -69,7 +71,7 @@ void Scene::initializeGL()
 
 	billboard = PTriMesh::createBillBoard();
 	billboard->initAll();
-	fbo1 = std::make_shared<GLFrameBufferObject>();
+	fbo1 = std::make_shared<GLColorFrameBufferObject>();
 	msfbo = std::make_shared<GLMultiSampleFrameBufferObject>(sampleRate);
 	doPrimAdd();
 
@@ -83,7 +85,7 @@ void Scene::initializeGL()
 
 void Scene::resizeGL(int w, int h)
 {
-	this->glViewport(0, 0, w, h);
+	GLFUNC->glViewport(0, 0, w, h);
 	camera->initialize(w, h);
 	fbo1->resize(h, w);
 	msfbo->resize(h, w);
@@ -91,13 +93,33 @@ void Scene::resizeGL(int w, int h)
 
 void Scene::paintGL()
 {
+	doPrimAdd();
+
+	if (bNeedInitLight) {
+		for (int i = 0; i < lights_.size(); i++) {
+			std::shared_ptr<PointLight> ptlight = std::dynamic_pointer_cast<PointLight>(lights_[i]);
+			if (ptlight) {
+				std::shared_ptr<CubeShadowMapPaintVisitor> smpainter = std::make_shared<CubeShadowMapPaintVisitor>(ptlight);
+				ptlight->initFbo();
+				ptlight->getFbo()->bind();
+				GLFUNC->glViewport(0, 0, ptlight->shadowMapSize().x(), ptlight->shadowMapSize().y());
+				GLFUNC->glEnable(GL_DEPTH_TEST);
+				GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				PaintInfomation info;
+				for (auto& prim : prims_) {
+					prim.second->paint(&info, smpainter.get());
+				}
+			}
+		}
+		GLFUNC->glViewport(0, 0, this->width(), this->height());
+		bNeedInitLight = false;
+	}
+
 	msfbo->bind();
-	this->glEnable(GL_DEPTH_TEST);
-	this->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLFUNC->glEnable(GL_DEPTH_TEST);
+	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	debugOpenGL();
-
-	doPrimAdd();
 
 	PaintInfomation info;
 	info.projMat = camera->getProjMatrix();
@@ -117,16 +139,17 @@ void Scene::paintGL()
 	}
 
 	//坐标轴
-	this->glClear(GL_DEPTH_BUFFER_BIT);
+	GLFUNC->glClear(GL_DEPTH_BUFFER_BIT);
 	axis.updateViewMat(camera->getViewMatrixForAxis());
 	axis.updateProjMat(camera->getProjMatrixForAxis());
 	axis.paint();
 
 	msfbo->copyToFbo(fbo1->fboId());
+
 	//Gamma 校正
-	glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fbo1->textureId());
+	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+	GLFUNC->glActiveTexture(GL_TEXTURE0);
+	GLFUNC->glBindTexture(GL_TEXTURE_2D, fbo1->textureId());
 	billboard->paint(&info, gammaCorrector.get());
 }
 
@@ -188,15 +211,15 @@ void Scene::prepareLight()
 	lights_.clear();
 	for (const auto& prim : prims_) {
 		if (prim.second->getMaterial()->hasEmission()) {
-			lights_.push_back(std::make_shared<Light>(prim.second->getMaterial()->emission(), prim.second));
+			lights_.push_back(std::make_shared<PointLight>(prim.second->getMaterial()->emission(), prim.second, 1024, 1024));
 		}
 	}
 	for (const auto& prim : primsToAdd) {
 		if (prim->getMaterial()->hasEmission()) {
-			lights_.push_back(std::make_shared<Light>(prim->getMaterial()->emission(), prim));
+			lights_.push_back(std::make_shared<PointLight>(prim->getMaterial()->emission(), prim, 1024, 1024));
 		}
 	}
-
+	bNeedInitLight = true;
 	//#TODO1 适应环境贴图光源
 }
 

@@ -10,7 +10,7 @@
 #include <QMatrix4x4>
 #include <math.h>
 
-class Axis: public OPENGLCLASS
+class Axis
 {
 public:
     Axis();

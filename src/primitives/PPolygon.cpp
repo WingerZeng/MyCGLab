@@ -8,6 +8,7 @@
 #include "shaders.h"
 #include <thread>
 #include <mutex>
+#include "GLFunctions.h"
 namespace mcl {			
 	std::mutex tessMtx;
 	//由于glu库原因，此处只能用全局变量，来给回调函数提供储存顶点坐标信息的位置

@@ -1,51 +1,76 @@
 #pragma once
 #include "mcl.h"
 #include "types.h"
-#include "QOpenGLFunctions_4_3_Core"
 namespace mcl {
-	class GLFrameBufferObject:public QOpenGLFunctions_4_3_Core
-	{
+	class GLFrameBufferObject {
 	public:
 		GLFrameBufferObject();
-		~GLFrameBufferObject();
+		virtual ~GLFrameBufferObject();
 
-		void bind();
+		virtual void bind() = 0;
 
-		void resize(int height, int width);
+		virtual void resize(int height, int width);
 
-		int textureId() { return tbo; }
+		virtual int textureId() = 0;
 
-		GLuint fboId() { return fbo; }
+		GLuint fboId() { return fbo; };
 
-	private:
+	protected:
 		GLuint fbo;
-		GLuint rbo;
-		GLuint tbo;
 		int w, h;
 	};
 
-	class GLMultiSampleFrameBufferObject :public QOpenGLFunctions_4_3_Core
+	class GLColorFrameBufferObject :public GLFrameBufferObject
+	{
+	public:
+		GLColorFrameBufferObject();
+		~GLColorFrameBufferObject();
+
+		void bind() override;
+
+		void resize(int height, int width) override;
+
+		int textureId()  override { return tbo; }
+
+	private:
+		GLuint rbo;
+		GLuint tbo;
+	};
+
+	class GLMultiSampleFrameBufferObject :public GLFrameBufferObject
 	{
 	public:
 		GLMultiSampleFrameBufferObject(int nsample);
 		~GLMultiSampleFrameBufferObject();;
 
-		void bind();
+		void bind() override;
 
-		void resize(int height, int width);
+		void resize(int height, int width) override;
 
-		int msTextureId();
+		int textureId() override;
 
 		void copyToFbo(GLuint fbo);
 
-		GLuint fboId() { return msfbo; }
-
 	private:
 		int nsample;
-		GLuint msfbo;
 		GLuint msrbo;
 		GLuint mstbo;
-		int w, h;
+	};
+
+	class GLShadowMapFrameBufferObject : public GLFrameBufferObject
+	{
+	public:
+		GLShadowMapFrameBufferObject();
+		~GLShadowMapFrameBufferObject();;
+
+		void bind() override;
+
+		void resize(int height, int width) override;
+
+		int textureId() override;
+
+	private:
+		GLuint cubetbo;
 	};
 }
 

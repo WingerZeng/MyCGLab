@@ -19,8 +19,6 @@ namespace mcl{
 		if (vao.isCreated())
 			vao.destroy();
 
-		this->initializeOpenGLFunctions();
-
 		for (const auto& pts : lp_) {
 			pts_.push_back(pts.x());
 			pts_.push_back(pts.y());

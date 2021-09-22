@@ -5,6 +5,7 @@
 #include "Light.h"
 #include "PaintVisitor.h"
 #include "Material.h"
+#include "GLFunctions.h"
 namespace mcl{
 	
 	PTriMesh::PTriMesh(const std::vector<int>& tris, const std::vector<Point3f>& pts) :tris_(tris)
@@ -76,7 +77,7 @@ namespace mcl{
 
 	void PTriMesh::initializeGL()
 	{
-		this->initializeOpenGLFunctions();
+		GLFUNC->initializeOpenGLFunctions();
 
 		vao = std::make_shared<QOpenGLVertexArrayObject>();
 		vbo = std::make_shared<QOpenGLBuffer>();
@@ -109,21 +110,21 @@ namespace mcl{
 
 		//导入面片顶点数据
 		auto totsize = (tris_.size() * 3 + uvs.size() * 2 + normals.size() * 3) * sizeof(Float);
-		glBufferData(GL_ARRAY_BUFFER, tris_.size() * 3 * sizeof(Float), rawPts.get(), GL_STATIC_DRAW);
-		this->glBufferData(GL_ARRAY_BUFFER, totsize,nullptr , GL_STATIC_DRAW);
+		GLFUNC->glBufferData(GL_ARRAY_BUFFER, tris_.size() * 3 * sizeof(Float), rawPts.get(), GL_STATIC_DRAW);
+		GLFUNC->glBufferData(GL_ARRAY_BUFFER, totsize,nullptr , GL_STATIC_DRAW);
 		GLintptr offset1 = 0;
-		this->glBufferSubData(GL_ARRAY_BUFFER, offset1, tris_.size() * 3 * sizeof(Float), &rawPts[0]);
+		GLFUNC->glBufferSubData(GL_ARRAY_BUFFER, offset1, tris_.size() * 3 * sizeof(Float), &rawPts[0]);
 		GLintptr offset2 = tris_.size() * 3 * sizeof(Float);
-		this->glBufferSubData(GL_ARRAY_BUFFER, offset2, normals.size() * 3 * sizeof(Float), &rawNormals[0]);
+		GLFUNC->glBufferSubData(GL_ARRAY_BUFFER, offset2, normals.size() * 3 * sizeof(Float), &rawNormals[0]);
 		GLintptr offset3 = offset2 + normals.size() * 3 * sizeof(Float);
-		this->glBufferSubData(GL_ARRAY_BUFFER, offset3, uvs.size() * 2 * sizeof(Float), &rawUvs[0]);
+		GLFUNC->glBufferSubData(GL_ARRAY_BUFFER, offset3, uvs.size() * 2 * sizeof(Float), &rawUvs[0]);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), (void*)(sizeof(Float) * tris_.size() * 3));
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Float), (void*)(sizeof(Float) * (tris_.size() + normals.size()) * 3));
-		glEnableVertexAttribArray(2);
+		GLFUNC->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		GLFUNC->glEnableVertexAttribArray(0);
+		GLFUNC->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), (void*)(sizeof(Float) * tris_.size() * 3));
+		GLFUNC->glEnableVertexAttribArray(1);
+		GLFUNC->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(Float), (void*)(sizeof(Float) * (tris_.size() + normals.size()) * 3));
+		GLFUNC->glEnableVertexAttribArray(2);
 
 		//导入边顶点数据
 		linevao = std::make_shared<QOpenGLVertexArrayObject>();
@@ -132,9 +133,9 @@ namespace mcl{
 		linevbo = std::make_shared<QOpenGLBuffer>();
 		linevbo->create();
 		linevbo->bind();
-		glBufferData(GL_ARRAY_BUFFER, nEgs * 6 * sizeof(Float), &linepts_[0], GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
-		glEnableVertexAttribArray(0);
+		GLFUNC->glBufferData(GL_ARRAY_BUFFER, nEgs * 6 * sizeof(Float), &linepts_[0], GL_STATIC_DRAW);
+		GLFUNC->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		GLFUNC->glEnableVertexAttribArray(0);
 	}
 
 	void PTriMesh::initialize(PaintVisitor* visitor)

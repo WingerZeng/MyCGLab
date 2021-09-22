@@ -16,7 +16,7 @@ namespace mcl {
 		virtual Color3f ambient();
 		virtual Bound3f bound();
 		virtual std::shared_ptr<Primitive> primitive();
-		virtual void bind(QOpenGLShaderProgram* shader, int index);
+		virtual void bind(QOpenGLShaderProgram* shader, int lightIdx, int& textureIdx);
 
 		virtual bool castShadow();
 
@@ -29,8 +29,8 @@ namespace mcl {
 	class PointLight : public Light
 	{
 	public:
-		using Light::Light;
-
+		PointLight(const mcl::Color3f& e, const std::shared_ptr<mcl::Primitive>& prim, GLuint smWidth=1024, GLuint smHeight=1024);
+		~PointLight();
 		enum LightOrient
 		{
 			POS_X = 0,
@@ -43,11 +43,19 @@ namespace mcl {
 
 		QMatrix4x4 getProjectMatrix();
 		QMatrix4x4 getViewMatrix(LightOrient ori);
-		virtual void bind(QOpenGLShaderProgram* shader, int index);
-
+		virtual void bind(QOpenGLShaderProgram* shader, int lightIdx, int& textureIdx) override;
+		std::shared_ptr<GLShadowMapFrameBufferObject> getFbo();
+		void initFbo(); //≥ı ºªØfbo
 		virtual bool castShadow();
+
+		Float getFarPlane() { return FarPlane; }
+		Float getNearPlane() { return NearPlane; }
+		Point2i shadowMapSize() { return Point2i(smWidth, smHeight); }
 	private:
-		GLCubeTexture cubeMapId;
-		const double FarPlane = 1e3;
+		std::shared_ptr<GLShadowMapFrameBufferObject> fbo;
+		const Float FarPlane = 1e3;
+		const Float NearPlane = 0.01;
+		GLuint smWidth, smHeight;
+		Float halfArea;
 	};
 }

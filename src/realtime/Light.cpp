@@ -1,6 +1,8 @@
 #include "Light.h"
 #include "Primitive.h"
 #include <QOpenGLShaderProgram>
+#include "GLFrameBufferObject.h"
+#include "GLFunctions.h"
 namespace mcl {
 
 	Light::Light(const Color3f& e, const std::shared_ptr<Primitive>& prim)
@@ -34,25 +36,40 @@ namespace mcl {
 		return prim;
 	}
 
-	void Light::bind(QOpenGLShaderProgram* shader, int index)
+	void Light::bind(QOpenGLShaderProgram* shader, int lightIdx, int& textureIdx)
 	{
-		std::string lightname = ("lights[" + std::to_string(index) + "]").c_str();
+		std::string lightname = ("lights[" + std::to_string(lightIdx) + "]").c_str();
 		shader->setUniformValue((lightname + ".ambient").c_str(), QVector3D(ambient()));
 		shader->setUniformValue((lightname + ".emission").c_str(), QVector3D(emission()));
 		shader->setUniformValue((lightname + ".pos").c_str(), QVector3D(position()));
 		shader->setUniformValue((lightname + ".bound[0]").c_str(), QVector3D(bd.pMin()));
 		shader->setUniformValue((lightname + ".bound[1]").c_str(), QVector3D(bd.pMax()));
 		shader->setUniformValue((lightname + ".castShadow").c_str(), castShadow());
+		shader->setUniformValue((lightname + ".shadowOffset").c_str(),GLfloat(0.02));
 	}
 
 	bool Light::castShadow() {
 		return false;
 	}
 
+	PointLight::PointLight(const mcl::Color3f& e, const std::shared_ptr<mcl::Primitive>& prim, GLuint smWidth/*=1024*/, GLuint smHeight/*=1024*/)
+		: Light(e, prim), smHeight(smHeight), smWidth(smWidth)
+	{
+		Bound3f bd = prim->getBound();
+		halfArea += (bd.pMax().x() - bd.pMin().x()) * (bd.pMax().y() - bd.pMin().y());
+		halfArea += (bd.pMax().y() - bd.pMin().y()) * (bd.pMax().z() - bd.pMin().z());
+		halfArea += (bd.pMax().z() - bd.pMin().z()) * (bd.pMax().x() - bd.pMin().x());
+	}
+
+	PointLight::~PointLight()
+	{
+	}
+
 	QMatrix4x4 PointLight::getProjectMatrix()
 	{
 		QMatrix4x4 mat;
-		mat.perspective(90, 1, 0.01, FarPlane);
+		mat.perspective(90, 1, NearPlane, FarPlane);
+		return mat;
 	}
 
 	QMatrix4x4 PointLight::getViewMatrix(LightOrient ori)
@@ -94,10 +111,33 @@ namespace mcl {
 		return mat;
 	}
 
-	void PointLight::bind(QOpenGLShaderProgram* shader, int index)
+	void PointLight::bind(QOpenGLShaderProgram* shader, int lightIdx, int& textureIdx)
 	{
-		std::string lightname = ("lights[" + std::to_string(index) + "]").c_str();
-		//#TODO0 bind texture
+		std::string lightname = ("lights[" + std::to_string(lightIdx) + "]").c_str();
+		shader->setUniformValue((lightname + ".ambient").c_str(), QVector3D(ambient()));
+		shader->setUniformValue((lightname + ".emission").c_str(), QVector3D(emission()));
+		shader->setUniformValue((lightname + ".pos").c_str(), QVector3D(position()));
+		shader->setUniformValue((lightname + ".bound[0]").c_str(), QVector3D(bd.pMin()));
+		shader->setUniformValue((lightname + ".bound[1]").c_str(), QVector3D(bd.pMax()));
+		shader->setUniformValue((lightname + ".castShadow").c_str(), castShadow());
+		shader->setUniformValue((lightname + ".farPlane").c_str(), FarPlane);
+		shader->setUniformValue((lightname + ".nearPlane").c_str(), NearPlane);
+		shader->setUniformValue((lightname + ".shadowOffset").c_str(), GLfloat(0.02));
+		GLFUNC->glActiveTexture(GL_TEXTURE0 + textureIdx);
+		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, fbo->textureId());
+		shader->setUniformValue((lightname + ".shadowMap").c_str(), textureIdx++);
+	}
+
+	std::shared_ptr<mcl::GLShadowMapFrameBufferObject> PointLight::getFbo()
+	{
+		return fbo;
+	}
+
+	void PointLight::initFbo()
+	{
+		if(!fbo)
+			fbo = std::make_shared<GLShadowMapFrameBufferObject>();
+		fbo->resize(smHeight, smWidth);
 	}
 
 	bool PointLight::castShadow()

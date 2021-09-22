@@ -16,7 +16,7 @@ class PaintInfomation;
 			return T::tag();\
 		}
 
-class Primitive : public OPENGLCLASS
+class Primitive
 {
 	RTTI_CLASS(Primitive)
 public:

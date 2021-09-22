@@ -19,8 +19,6 @@ namespace mcl{
 		if (vao.isCreated())
 			vao.destroy();
 
-		this->initializeOpenGLFunctions();
-
 		vao.create();
 		vao.bind();
 		vbo.create();

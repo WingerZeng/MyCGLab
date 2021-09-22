@@ -7,14 +7,15 @@
 #include "PaintInformation.h"
 #include "shaders.h"
 #include "Material.h"
+#include "GLFunctions.h"
 namespace mcl{
 	//#TODO1 info可以优化为栈模式
 	int DefaultPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	{
 		//do before paint
 		if (tri->selected()) {
-			glEnable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(-1, -1);
+			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(-1, -1);
 		}
 		QMatrix4x4 tempTrans_ = info->modelMat;
 		bool tempSelected_ = info->selected;
@@ -33,11 +34,11 @@ namespace mcl{
 			tri->getMaterial()->prepareGL(shader);
 
 			tri->getVAO()->bind();
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
+			GLFUNC->glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
+			GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(0, 0);
 
 			info->hasNormal = false;
 			shader->release();
@@ -46,21 +47,21 @@ namespace mcl{
 			LineShader::ptr()->bind();
 			info->setUniformValue(LineShader::ptr());
 			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
-			glEnable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(-1, -1);
+			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(-1, -1);
 
 			tri->getLineVAO()->bind();
 
-			glDrawArrays(GL_LINES, 0, tri->getEdgeNumber() * 2);
+			GLFUNC->glDrawArrays(GL_LINES, 0, tri->getEdgeNumber() * 2);
 
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
+			GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(0, 0);
 			LineShader::ptr()->release();
 		}
 
 		//do after paint
-		glDisable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0, 0);
+		GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(0, 0);
 		info->modelMat = tempTrans_;
 		info->selected = tempSelected_;
 
@@ -80,24 +81,24 @@ namespace mcl{
 		info->modelMat = info->modelMat * point->localTransform().toQMatrix();
 		info->selected = point->selected() || info->selected;
 
-		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(-1, -1);
+		GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(-1, -1);
 
 		point->getVAO().bind();
 		PointShader::ptr()->bind();
 		info->setUniformValue(PointShader::ptr());
 		PointShader::ptr()->setUniformValue("ourColor", QVector4D(point->color().x(), point->color().y(), point->color().z(), 1.0f));
 
-		glDrawArrays(GL_POINTS, 0, 1);
+		GLFUNC->glDrawArrays(GL_POINTS, 0, 1);
 
-		glDisable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0, 0);
+		GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(0, 0);
 
 		PointShader::ptr()->release();
 
 		//do after paint
-		glDisable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0, 0);
+		GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(0, 0);
 		info->modelMat = tempTrans_;
 		info->selected = tempSelected_;
 		return 0;
@@ -115,8 +116,8 @@ namespace mcl{
 	{
 		//do before paint
 		if (polygon->selected()) {
-			glEnable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(-1, -1);
+			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(-1, -1);
 		}
 		QMatrix4x4 tempTrans_ = info->modelMat;
 		bool tempSelected_ = info->selected;
@@ -141,13 +142,13 @@ namespace mcl{
 			}
 
 			polygon->getVAO()->bind();
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			GLFUNC->glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			for (int i = 0; i < polygon->getDrawInfo().size(); i++)
-				glDrawArrays(polygon->getDrawInfo()[i].type, polygon->getDrawInfo()[i].offset, polygon->getDrawInfo()[i].size);
+				GLFUNC->glDrawArrays(polygon->getDrawInfo()[i].type, polygon->getDrawInfo()[i].offset, polygon->getDrawInfo()[i].size);
 
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
+			GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(0, 0);
 
 			shader->release();
 		}
@@ -155,22 +156,22 @@ namespace mcl{
 			LineShader::ptr()->bind();
 			info->setUniformValue(LineShader::ptr());
 			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
-			glEnable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(-1, -1);
+			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(-1, -1);
 
 			polygon->getVAO()->bind();
 
 			for (int i = 0; i < polygon->getBoundDrawInfo().size(); i++)
-				glDrawArrays(polygon->getBoundDrawInfo()[i].type, polygon->getBoundDrawInfo()[i].offset, polygon->getBoundDrawInfo()[i].size);
+				GLFUNC->glDrawArrays(polygon->getBoundDrawInfo()[i].type, polygon->getBoundDrawInfo()[i].offset, polygon->getBoundDrawInfo()[i].size);
 
-			glDisable(GL_POLYGON_OFFSET_FILL);
-			glPolygonOffset(0, 0);
+			GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(0, 0);
 			LineShader::ptr()->release();
 		}
 
 		//do after paint
-		glDisable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0, 0);
+		GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(0, 0);
 		info->modelMat = tempTrans_;
 		info->selected = tempSelected_;
 		return 0;
@@ -193,8 +194,8 @@ namespace mcl{
 	int DefaultPaintVisitor::paintLines(PaintInfomation* info, PLines* lines)
 	{
 		//do before paint
-		glPolygonOffset(-2, -2);
-		glEnable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(-2, -2);
+		GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
 
 		QMatrix4x4 tempTrans_ = info->modelMat;
 		bool tempSelected_ = info->selected;
@@ -207,15 +208,15 @@ namespace mcl{
 		info->setUniformValue(LineShader::ptr());
 		LineShader::ptr()->setUniformValue("ourColor", QVector4D(lines->color().x(), lines->color().y(), lines->color().z(), 1.0f));
 		if (lines->isLoop())
-			glDrawArrays(GL_LINE_LOOP, 0, lines->getPtNum());
+			GLFUNC->glDrawArrays(GL_LINE_LOOP, 0, lines->getPtNum());
 		else
-			glDrawArrays(GL_LINE_STRIP, 0, lines->getPtNum());
+			GLFUNC->glDrawArrays(GL_LINE_STRIP, 0, lines->getPtNum());
 
 		LineShader::ptr()->release();
 
 		//do after paint
-		glDisable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0, 0);
+		GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(0, 0);
 		info->modelMat = tempTrans_;
 		info->selected = tempSelected_;
 		return 0;

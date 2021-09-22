@@ -3,7 +3,6 @@
 #include <set>
 #include "mcl.h"
 #include <QtWidgets/QOpenGLWidget>
-#include <QtGui/QOpenGLFunctions_4_3_Core>
 #include <QVector3D>
 #include "axis.h"
 #include "camera.h"
@@ -13,7 +12,7 @@ class QOpenGLDebugLogger;
 namespace mcl {
 	class Primitive;
 
-	class Scene : public QOpenGLWidget, public OPENGLCLASS
+	class Scene : public QOpenGLWidget
 	{
 		Q_OBJECT
 
@@ -95,12 +94,13 @@ namespace mcl {
 		static QOpenGLDebugLogger* logger;
 
 		bool wfmode_; // mode of wire frame
+		bool bNeedInitLight = false;
 
 		int rbo;
 
 		std::shared_ptr<PaintVisitor> painter;
 		std::shared_ptr<GammaPaintVisitor> gammaCorrector;
-		std::shared_ptr<GLFrameBufferObject> fbo1;
+		std::shared_ptr<GLColorFrameBufferObject> fbo1;
 		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
 		std::shared_ptr<PTriMesh> billboard;
 

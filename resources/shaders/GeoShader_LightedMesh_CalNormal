@@ -14,13 +14,13 @@ uniform mat4 modelViewMatInv;
 
 void main()																						
 {	
+	mat4 transform = transpose(inverse(viewMat));
+	vec4 viewPoint0 = viewMat * vec4(worldPos[0], 1);
 	if(!hasNormal){
 		vec3 edge1 = worldPos[1]-worldPos[0];
 		vec3 edge2 = worldPos[2]-worldPos[0];
 		aNormal = normalize(cross(edge1,edge2));
-		mat4 transform = transpose(inverse(viewMat));
 		vec4 viewNormal = transform * vec4(aNormal, 0.0);
-		vec4 viewPoint0 = viewMat * vec4(worldPos[0], 1);
 		//透视投影下，双面光照的实现方法，计算三角形与相机构成的四面体的体积正负
 		if(dot(viewNormal.xyz, viewPoint0.xyz) > 0)
 			aNormal = -aNormal;  //双面光照
@@ -28,20 +28,35 @@ void main()
 																								   
 	gl_Position = gl_in[0].gl_Position;
 	aWorldPos = worldPos[0];	
-	if(hasNormal)
+	if(hasNormal){
 		aNormal = normal[0];
+		//调整法向指向摄像机
+		vec4 viewNormal = transform * vec4(aNormal, 0.0);
+		if(dot(viewNormal.xyz, viewPoint0.xyz) > 0)
+			aNormal = -aNormal;
+	}
 	EmitVertex();
 
 	gl_Position = gl_in[1].gl_Position;
 	aWorldPos = worldPos[1];	
-	if(hasNormal)
-		aNormal = normal[1];								   
+	if(hasNormal){
+		aNormal = normal[1];	
+		//调整法向指向摄像机
+		vec4 viewNormal = transform * vec4(aNormal, 0.0);
+		if(dot(viewNormal.xyz, viewPoint0.xyz) > 0)
+			aNormal = -aNormal;							   
+	}
 	EmitVertex();		
 
 	gl_Position = gl_in[2].gl_Position;
 	aWorldPos = worldPos[2];	
-	if(hasNormal)
-		aNormal = normal[2];								   
+	if(hasNormal){
+		aNormal = normal[2];	
+		//调整法向指向摄像机
+		vec4 viewNormal = transform * vec4(aNormal, 0.0);
+		if(dot(viewNormal.xyz, viewPoint0.xyz) > 0)
+			aNormal = -aNormal;							   
+	}							   
 	EmitVertex();	
 
 	EndPrimitive();										

@@ -27,6 +27,7 @@ namespace mcl {
 		bool selected = false;
 		bool hasNormal = false;
 		Color3f selectedColor = Color3f(1,0,0);
+		int activeTextrueCnt = 0;
 		void setUniformValue(QOpenGLShaderProgram* shader);
 	};
 }

@@ -6,5 +6,5 @@ uniform float gamma = 2.2;
 
 void main(){
 	FragColor.a = 1;
-	FragColor.rgb =  pow(texture(frame,texCoord).rgb, vec3(1.0/gamma));
+	FragColor.rgb = pow(texture(frame,texCoord).rgb, vec3(1.0/gamma));
 }
