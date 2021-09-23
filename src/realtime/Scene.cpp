@@ -119,7 +119,7 @@ void Scene::paintGL()
 	GLFUNC->glEnable(GL_DEPTH_TEST);
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	debugOpenGL();
+	//debugOpenGL();
 
 	PaintInfomation info;
 	info.projMat = camera->getProjMatrix();
