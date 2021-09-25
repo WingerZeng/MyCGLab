@@ -1,8 +1,12 @@
 #version 430 core
+uniform vec4 ourColor;
+uniform vec4 Le;
 out vec4 FragColor;
 in vec3 aNormal;
 in vec3 geoNormal;
 in vec3 aWorldPos;
+uniform bool selected = false;
+uniform vec3 selectedColor;
 struct Light{
 vec3 pos; 
 vec3 ambient; 
@@ -15,17 +19,12 @@ float shadowOffset;
 float mapSize;
 samplerCube shadowMap;
 };
-uniform vec4 ourColor;
-uniform vec4 Le;
-uniform bool selected = false;
-uniform vec3 selectedColor;
 uniform Light lights[10];
 uniform int lightCount;
 const int PcfSampleCnt = 6;
 const int PcssSampleCnt = 4;
-const float PseudoRandomFactor = 0.4;
-const float lightAreaScale = 1;
-const int PTable[65] = {59,25,32,4,51,54,28,62,38,8,52,26,22,47,0,49,2,30,63,20,50,58,44,1,17,7,35,31,61,55,39,53,33,18,5,19,11,48,24,56,46,15,43,29,27,12,6,45,37,57,9,10,13,60,41,16,64,23,40,34,3,36,21,42,14};
+const float PseudoRandomFactor = 0.3;
+const int PerlinPTable[65] = {59,25,32,4,51,54,28,62,38,8,52,26,22,47,0,49,2,30,63,20,50,58,44,1,17,7,35,31,61,55,39,53,33,18,5,19,11,48,24,56,46,15,43,29,27,12,6,45,37,57,9,10,13,60,41,16,64,23,40,34,3,36,21,42,14};
 
 vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receiverDist, int dim){
 	vec3 ret = vec3(0);
@@ -37,8 +36,8 @@ vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receive
 }
 
 float myRand(float val){
-	int intval = int(val * (1e5+1) + aWorldPos.x * (1e4+1));
-	return PTable[intval%65] * 1.0 / 64;
+	int intval = int(val * 1e5);
+	return PerlinPTable[intval%65] * 1.0 / 64;
 }
 
 float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
@@ -47,16 +46,19 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	//cal average blocker dist
 	float avgBlockerDist = 0;
 	float blockerCnt = 0;
+	const float lightAreaScale = 1;
 	float offset1 = (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) * lightAreaScale / PcssSampleCnt;
 	float offset2 = (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) * lightAreaScale / PcssSampleCnt;
+	//#TEST
+	int cnt = 0;
 	//now don't consider light source with zero area
-	if(offset1<=1e-16 || offset2<=1e-16)
+	if(offset1<=1e-10 || offset2<=1e-10)
 		return 0;
 	for(int i=0;i<PcssSampleCnt;i++){
-		float d1offset = offset1 * i - (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) * lightAreaScale / 2;
+		float d1offset = offset1 * i - (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1])/2;
 
 		for(int j=0;j<PcssSampleCnt;j++){
-			float d2offset = offset2 * j - (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) * lightAreaScale / 2;
+			float d2offset = offset2 * j - (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2])/2;
 			vec3 offset = {0,0,0};
 			offset[d1] = d1offset;
 			offset[d2] = d2offset;
@@ -74,16 +76,29 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				vec3 pBlocker = lights[lightIdx].pos + normalize(Vsa) * dBlocker;
 				//project blocker to light
 				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) * (aWorldPos[dim] - lights[lightIdx].pos[dim]) / (aWorldPos[dim] - pBlocker[dim]);
-				if(pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
+				if(abs(aWorldPos[dim] - pBlocker[dim]) > 1e-6 && pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
-					float temp = 0;
+					avgBlockerDist+=dBlocker * dBlocker;
+					blockerCnt = blockerCnt + 1;
+				}
+				else{
 					//fade with distance
-					float dist1 = min(pProjectInLight[d1] - lights[lightIdx].bound[0][d1], lights[lightIdx].bound[1][d1] - pProjectInLight[d1]);
-					float dist2 = min(pProjectInLight[d2] - lights[lightIdx].bound[0][d2], lights[lightIdx].bound[1][d2] - pProjectInLight[d2]);
-					temp = (dist1 / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) + dist2 / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2])) * 4;
-					avgBlockerDist += dBlocker * dBlocker * min(temp, 1.0);
-					blockerCnt = blockerCnt + 1.0 * min(temp, 1.0);
+					float temp = 0;
+					if(pProjectInLight[d1] < lights[lightIdx].bound[0][d1]){
+						temp+=(lights[lightIdx].bound[0][d1] - pProjectInLight[d1]) / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / 3;
+					}
+					if(pProjectInLight[d1] > lights[lightIdx].bound[1][d1]){
+						temp+=-(lights[lightIdx].bound[1][d1] - pProjectInLight[d1]) / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / 3;
+					}
+					if(pProjectInLight[d2] < lights[lightIdx].bound[0][d2]){
+						temp+=(lights[lightIdx].bound[0][d2] - pProjectInLight[d2]) / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / 3;
+					}
+					if(pProjectInLight[d2] > lights[lightIdx].bound[1][d2]){
+						temp+=-(lights[lightIdx].bound[1][d2] - pProjectInLight[d2]) / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / 3;
+					}
+					avgBlockerDist += dBlocker * dBlocker * max(1.0-temp, 0.0);
+					blockerCnt = blockerCnt + 1.0 * max(1.0-temp, 0.0);
 				}
 			}
 		}
@@ -94,10 +109,9 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	avgBlockerDist = sqrt(avgBlockerDist);
 
 	//PCF
-	int discardCnt = 0;
 	float ret = 0;
-	float wPenumbra1 = (receiverDist - avgBlockerDist) * lightAreaScale * (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / avgBlockerDist;
-	float wPenumbra2 = (receiverDist - avgBlockerDist) * lightAreaScale * (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / avgBlockerDist;
+	float wPenumbra1 = (receiverDist - avgBlockerDist) * (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / avgBlockerDist;
+	float wPenumbra2 = (receiverDist - avgBlockerDist) * (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / avgBlockerDist;
 	float pcfOffset1 = wPenumbra1 / PcfSampleCnt;
 	float pcfOffset2 = wPenumbra2 / PcfSampleCnt;
 	for(int i=0;i<PcfSampleCnt;i++){
@@ -110,8 +124,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 			vec3 Vsa = lightVec + offset;
 			
 			//pseudo-random
-			offset[d1] += ((myRand(Vsa[d1])-0.5)*PseudoRandomFactor + 0.5) * pcfOffset1;
-			offset[d2] += ((myRand(Vsa[d2])-0.5)*PseudoRandomFactor + 0.5) * pcfOffset2;
+			offset[d1] += ((myRand(Vsa[d1])-0.5)*PseudoRandomFactor + 0.5) * offset1;
+			offset[d2] += ((myRand(Vsa[d2])-0.5)*PseudoRandomFactor + 0.5) * offset2;
 			Vsa = lightVec + offset;
 
 			float dBlocker = texture(lights[lightIdx].shadowMap, Vsa).r;
@@ -125,24 +139,25 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				vec3 pBlocker = lights[lightIdx].pos + normalize(Vsa) * dBlocker;
 				//project blocker to light
 				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) * (aWorldPos[dim] - lights[lightIdx].pos[dim]) / (aWorldPos[dim] - pBlocker[dim]);
-				if(pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
-				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
-				{
-					float temp = 0;
-					//fade with distance
-					float dist1 = min(pProjectInLight[d1] - lights[lightIdx].bound[0][d1], lights[lightIdx].bound[1][d1] - pProjectInLight[d1]);
-					float dist2 = min(pProjectInLight[d2] - lights[lightIdx].bound[0][d2], lights[lightIdx].bound[1][d2] - pProjectInLight[d2]);
-					temp = (dist1 / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) + dist2 / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2])) * 5;
-					ret+=max(1-temp,0);
+				//fade with distance
+				float temp = 0;
+				if(pProjectInLight[d1] < lights[lightIdx].bound[0][d1]){
+					temp+=(lights[lightIdx].bound[0][d1] - pProjectInLight[d1]) / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / 1;
 				}
-				else{
-					//ret+=1;
-					discardCnt++;
+				if(pProjectInLight[d1] > lights[lightIdx].bound[1][d1]){
+					temp+=-(lights[lightIdx].bound[1][d1] - pProjectInLight[d1]) / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / 1;
 				}
+				if(pProjectInLight[d2] < lights[lightIdx].bound[0][d2]){
+					temp+=(lights[lightIdx].bound[0][d2] - pProjectInLight[d2]) / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / 1;
+				}
+				if(pProjectInLight[d2] > lights[lightIdx].bound[1][d2]){
+					temp+=-(lights[lightIdx].bound[1][d2] - pProjectInLight[d2]) / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / 1;
+				}
+				ret += min(temp, 1.0);
 			}
 		}
 	}
-	ret /= (PcfSampleCnt * PcfSampleCnt - discardCnt);
+	ret /= PcfSampleCnt * PcfSampleCnt;
 	return ret;
 }
 
