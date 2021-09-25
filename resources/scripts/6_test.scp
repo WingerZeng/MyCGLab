@@ -2,5 +2,6 @@
 test
 #content
 loadObj "$(ExeDir)/example-scenes/cornellbox/cornellbox.obj";
+wireframe 0;
 #description
 测试bumpmap，渲染大概需要1-5分钟

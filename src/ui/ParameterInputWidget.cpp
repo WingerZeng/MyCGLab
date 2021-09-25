@@ -14,6 +14,9 @@ namespace mcl{
 		:ParameterInputWidget(name,parent), ui(new Ui::ColorInputWidget)
 	{
 		ui->setupUi(this);
+		ui->doubleSpinBox->setMaximum(1e20);
+		ui->doubleSpinBox_2->setMaximum(1e20);
+		ui->doubleSpinBox_3->setMaximum(1e20);
 	}
 
 	ColorInputWidget::~ColorInputWidget()
@@ -46,7 +49,7 @@ namespace mcl{
 		spinbox = new QDoubleSpinBox;
 		spinbox->setDecimals(3);
 		spinbox->setMinimum(0);
-		spinbox->setMaximum(1e10);
+		spinbox->setMaximum(1e20);
 		spinbox->setSingleStep(0.01);
 
 		QHBoxLayout* layout = new QHBoxLayout;

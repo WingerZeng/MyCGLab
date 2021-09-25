@@ -72,6 +72,7 @@ namespace mcl {
 	{
 	public:
 		static QOpenGLShaderProgram* ptr();
+		static void clear();
 	private:
 		static QOpenGLShaderProgram* shader;
 	};
@@ -92,6 +93,14 @@ namespace mcl {
 		return shader;
 	}
 
+	template <typename ...Shaders>
+	void mcl::Shader<Shaders...>::clear()
+	{
+		if (shader) {
+			delete shader;
+		}
+		shader = nullptr;
+	}
 //---------------------------------
 //
 //定义着色器代码
@@ -138,5 +147,7 @@ namespace mcl {
 	using LightPerFragShader = Shader<VertexShader_OutputPos, GeoShader_LightedMesh_CalNormal, FragShader_LightPerFrag>;
 	using GammaCorrectShader = Shader<VertexShader_PostProc, FragShader_Gamma>;
 	using CubeShaodwMapShader = Shader<VertexShader_CubeShadowMap, GeoShader_CubeShadowMap, FragShader_ShadowMap>;
+
+	int clearAllShaders();
 }
 

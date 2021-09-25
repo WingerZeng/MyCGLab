@@ -1,0 +1,17 @@
+#title
+car_blinnphong_fast
+#content
+//Fast test, estimated to take several minutes
+loadObj "$(ExeDir)/example-scenes/car/car.obj";
+setSkybox  "$(ExeDir)/example-scenes/car/environment_day.hdr";
+setLookAt 8.22, -0.61, -9.80 -0.065, 0.996, 0.065 7.514, -0.702, -9.097;
+setFov 45;
+resize 480 270;
+//For fast testing, the count of sample is set lowwer
+set samplePerPixelDim 5;
+set threadNum $(MachCoreNum);
+raytrace;
+saveBmp "$(ExeDir)/car_blinnphong_fast.bmp";
+
+#description
+Fast test car scene

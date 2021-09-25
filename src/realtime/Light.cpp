@@ -23,7 +23,7 @@ namespace mcl {
 
 	mcl::Color3f Light::ambient()
 	{
-		return Color3f(0.2, 0.2, 0.2);
+		return Color3f(0.05, 0.05, 0.05);
 	}
 
 	mcl::Bound3f Light::bound()
@@ -82,11 +82,11 @@ namespace mcl {
 		{
 		case mcl::PointLight::POS_X:
 			front = QVector3D(1, 0, 0);
-			up = QVector3D(0, 1, 0);
+			up = QVector3D(0, -1, 0);
 			break;
 		case mcl::PointLight::NEG_X:
 			front = QVector3D(-1, 0, 0);
-			up = QVector3D(0, 1, 0);
+			up = QVector3D(0, -1, 0);
 			break;
 		case mcl::PointLight::POS_Y:
 			front = QVector3D(0, 1, 0);
@@ -98,11 +98,11 @@ namespace mcl {
 			break;
 		case mcl::PointLight::POS_Z:
 			front = QVector3D(0, 0, 1);
-			up = QVector3D(0, 1, 0);
+			up = QVector3D(0, -1, 0);
 			break;
 		case mcl::PointLight::NEG_Z:
 			front = QVector3D(0, 0, -1);
-			up = QVector3D(0, 1, 0);
+			up = QVector3D(0, -1, 0);
 			break;
 		default:
 			break;
@@ -122,7 +122,8 @@ namespace mcl {
 		shader->setUniformValue((lightname + ".castShadow").c_str(), castShadow());
 		shader->setUniformValue((lightname + ".farPlane").c_str(), FarPlane);
 		shader->setUniformValue((lightname + ".nearPlane").c_str(), NearPlane);
-		shader->setUniformValue((lightname + ".shadowOffset").c_str(), GLfloat(0.02));
+		shader->setUniformValue((lightname + ".shadowOffset").c_str(), shadowOffset);
+		shader->setUniformValue((lightname + ".mapSize").c_str(), smWidth);
 		GLFUNC->glActiveTexture(GL_TEXTURE0 + textureIdx);
 		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, fbo->textureId());
 		shader->setUniformValue((lightname + ".shadowMap").c_str(), textureIdx++);
@@ -137,12 +138,17 @@ namespace mcl {
 	{
 		if(!fbo)
 			fbo = std::make_shared<GLShadowMapFrameBufferObject>();
-		fbo->resize(smHeight, smWidth);
+		fbo->resize(smWidth, smWidth);
 	}
 
 	bool PointLight::castShadow()
 	{
 		return true;
+	}
+
+	void PointLight::setShadowOffset(GLfloat offset)
+	{
+		shadowOffset = offset;
 	}
 
 }

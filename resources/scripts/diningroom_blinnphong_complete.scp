@@ -1,0 +1,20 @@
+#title
+diningroom_blinnphong_complete
+#content
+//Completely test, estimated to take several hours
+loadObj "$(ExeDir)/example-scenes/diningroom/diningroom.obj";
+setLookAt 0.000,   12.720,   31.850  0.000,    0.985,   -0.174 0.000,   12.546,   
+scale 46 1,1,0.2;
+scale 45 1,1,0.2;
+scale 44 1,1,0.2;
+30.865  ;
+setFov 45;
+resize 1920 1080;
+//For completely testing, the count of sample is set higher
+set samplePerPixelDim 18;
+set threadNum $(MachCoreNum);
+raytrace;
+saveBmp "$(ExeDir)/diningroom_blinnphong_complete.bmp";
+
+#description
+Completely test diningroom scene

@@ -104,6 +104,8 @@ namespace mcl {
 		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
 		std::shared_ptr<PTriMesh> billboard;
 
+		Bound3f sceneBound;
+
 		const int sampleRate = 16;
 	};
 

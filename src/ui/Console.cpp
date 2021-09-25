@@ -10,6 +10,7 @@
 #include "ItemManager.h"
 #include "GlobalInfo.h"
 #include "MyCGLabConfig.h"
+#include "shaders.h"
 #define  BEGIN_FUNC_REGISTER\
 	std::function<int(std::iostream& sin)> lambda;
 	
@@ -228,6 +229,7 @@ namespace mcl{
 			REGISTER_CMD_FUNC(CatmullClarkTriangles, catmullClarkSubdivTriangles)
 			REGISTER_CMD_FUNC(LoopTriangles, loopSubdivideTriangles)
 			REGISTER_CMD_FUNC(triangulatePolygonMesh, triangulatePolygonMesh)
+			REGISTER_CMD_FUNC(reinitShaders, clearAllShaders)
 			REGISTER_CLASS_CMD_FUNC(clone, MAIPTR->getItemMng().get(), ItemManager, clonePrimitive)
 			REGISTER_CLASS_CMD_FUNC(scale, MAIPTR->getItemMng().get(), ItemManager, scale)
 			REGISTER_CLASS_CMD_FUNC(rotate, MAIPTR->getItemMng().get(), ItemManager, rotate)

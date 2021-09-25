@@ -104,6 +104,7 @@ void Scene::paintGL()
 				ptlight->getFbo()->bind();
 				GLFUNC->glViewport(0, 0, ptlight->shadowMapSize().x(), ptlight->shadowMapSize().y());
 				GLFUNC->glEnable(GL_DEPTH_TEST);
+				GLFUNC->glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 				GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				PaintInfomation info;
 				for (auto& prim : prims_) {
@@ -111,6 +112,7 @@ void Scene::paintGL()
 				}
 			}
 		}
+		GLFUNC->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 		GLFUNC->glViewport(0, 0, this->width(), this->height());
 		bNeedInitLight = false;
 	}
@@ -120,7 +122,6 @@ void Scene::paintGL()
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//debugOpenGL();
-
 	PaintInfomation info;
 	info.projMat = camera->getProjMatrix();
 	info.viewMat = camera->getViewMatrix();
@@ -202,6 +203,19 @@ void Scene::updateScene(UpdateReason reason)
 	repaint();
 	if (reason == PRIMITIVE) {
 		prepareLight();
+		sceneBound = Bound3f();
+		for (const auto& prim : prims_) {
+			sceneBound.unionBd(prim.second->getBound());
+		}
+		for (const auto& prim : primsToAdd) {
+			sceneBound.unionBd(prim->getBound());
+		}
+		Float len = (sceneBound.pMax() - sceneBound.pMin()).length();
+		for (auto& light : lights_) {
+			if (std::dynamic_pointer_cast<PointLight>(light)) {
+				std::dynamic_pointer_cast<PointLight>(light)->setShadowOffset(len / 1000);
+			}
+		}
 	}
 	emit updated(reason);
 }
@@ -211,12 +225,12 @@ void Scene::prepareLight()
 	lights_.clear();
 	for (const auto& prim : prims_) {
 		if (prim.second->getMaterial()->hasEmission()) {
-			lights_.push_back(std::make_shared<PointLight>(prim.second->getMaterial()->emission(), prim.second, 1024, 1024));
+			lights_.push_back(std::make_shared<PointLight>(prim.second->getMaterial()->emission(), prim.second, 2048, 2048));
 		}
 	}
 	for (const auto& prim : primsToAdd) {
 		if (prim->getMaterial()->hasEmission()) {
-			lights_.push_back(std::make_shared<PointLight>(prim->getMaterial()->emission(), prim, 1024, 1024));
+			lights_.push_back(std::make_shared<PointLight>(prim->getMaterial()->emission(), prim, 2048, 2048));
 		}
 	}
 	bNeedInitLight = true;

@@ -50,11 +50,13 @@ namespace mcl {
 
 		Float getFarPlane() { return FarPlane; }
 		Float getNearPlane() { return NearPlane; }
+		void setShadowOffset(GLfloat offset);
 		Point2i shadowMapSize() { return Point2i(smWidth, smHeight); }
 	private:
 		std::shared_ptr<GLShadowMapFrameBufferObject> fbo;
 		const Float FarPlane = 1e3;
 		const Float NearPlane = 0.01;
+		GLfloat shadowOffset;
 		GLuint smWidth, smHeight;
 		Float halfArea;
 	};
