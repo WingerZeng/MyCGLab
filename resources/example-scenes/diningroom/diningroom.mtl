@@ -1,0 +1,191 @@
+# vkEngine Export mtl file
+newmtl diningroom_0_material
+Kd 0.842 0.842 0.842
+Ks 0 0 0
+Ns 8
+newmtl diningroom_1_material
+Kd 0.016 0.047 0.002
+Ks 0 0 0
+Ns 8
+newmtl diningroom_2_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 1
+map_Kd textures/WoodFlooring08_COL_VAR1_1K.jpg
+newmtl diningroom_3_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 1
+map_Kd textures/TexturesCom_PlywoodOld0068_COLOR.png
+newmtl diningroom_4_material
+Kd 0.252944 0.252944 0.252944
+Ks 1 1 1
+Ns 25
+newmtl diningroom_5_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 1
+map_Kd textures/picture.jpg
+newmtl diningroom_6_material
+Kd 0.834 0.834 0.834
+Ks 0 0 0
+Ns 18
+newmtl diningroom_7_material
+Kd 0.349 0.509 0.509
+Ks 0.5 0.5 0.5
+Ns 50
+newmtl diningroom_8_material
+Kd 0.8 0.8 0.8
+Ks 1 1 1
+Ns 10
+newmtl diningroom_9_material
+Kd 0.301 0.319 0.315
+Ks 1 1 1
+Ns 14
+newmtl diningroom_10_material
+Kd 0.692071 0.692071 0.692071
+Ks 0 0 0
+Ns 16
+newmtl diningroom_11_material
+Kd 0.023 0.014 0.006
+Ks 0 0 0
+Ns 7
+newmtl diningroom_12_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_Rumore.jpg
+newmtl diningroom_13_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_paginestrappate.jpg
+newmtl diningroom_14_material
+Kd 0.0100228 0.0100228 0.0100228
+Ks 0 0 0
+Ns 20
+newmtl diningroom_15_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_Cripta.jpg
+newmtl diningroom_16_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 1
+map_Kd textures/stripy_book_slip.png
+newmtl diningroom_17_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 1
+map_Kd textures/Book_Edge4.jpg
+newmtl diningroom_18_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 35
+map_Kd textures/introduction_to_cycles.jpg
+newmtl diningroom_19_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 35
+map_Kd textures/book_cover_interior.jpg
+newmtl diningroom_20_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 35
+map_Kd textures/book_cover_colors.jpg
+newmtl diningroom_21_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_Duenon.jpg
+newmtl diningroom_22_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_desideri.jpg
+newmtl diningroom_23_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_Poihosmesso.jpg
+newmtl diningroom_24_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_Gostanza.jpg
+newmtl diningroom_25_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_FATE.jpg
+newmtl diningroom_26_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_i4k.jpg
+newmtl diningroom_27_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_o2.jpg
+newmtl diningroom_28_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 12
+map_Kd textures/UVlibro_uova.jpg
+newmtl diningroom_29_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibroAldiLa.jpg
+newmtl diningroom_30_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_EV.jpg
+newmtl diningroom_31_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_Izu.jpg
+newmtl diningroom_32_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_sogni.jpg
+newmtl diningroom_33_material
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 1
+newmtl diningroom_34_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/UVlibro_marne.jpg
+newmtl diningroom_35_material
+Kd 0.0290998 0.0290998 0.0290998
+Ks 0 0 0
+Ns 25
+newmtl diningroom_36_material
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 1
+newmtl diningroom_37_material
+Kd 0.351 0.351 0.351
+Ks 1 1 1
+Ns 1
+newmtl diningroom_38_material
+Kd 0.009 0.009 0.009
+Ks 0 0 0
+Ns 100
+newmtl diningroom_39_material
+Kd 0.5 0.5 0.5
+Ks 0 0 0
+Ns 16
+map_Kd textures/REF_Wooden_Planter.jpg
+newmtl diningroom_light
+Kd 1 1 1
+Le 4.627 4.589 4.451
+Ks 0 0 0
+Ns 1

@@ -1,8 +1,8 @@
 #include "shaders.h"
-
+#include "GlobalInfo.h"
 namespace mcl{
 	
-	int clearAllShaders()
+	int initAllShaders()
 	{
 		CommonShader::clear();
 		LightShader::clear();
@@ -11,7 +11,22 @@ namespace mcl{
 		LightPerFragShader::clear();
 		GammaCorrectShader::clear();
 		CubeShaodwMapShader::clear();
-		return 0;
+		DeferedShader::clear();
+		if (CommonShader::ptr() &&
+			LightShader::ptr() &&
+			LineShader::ptr() &&
+			PointShader::ptr() &&
+			LightPerFragShader::ptr() &&
+			GammaCorrectShader::ptr() &&
+			CubeShaodwMapShader::ptr() &&
+			DeferedShader::ptr()) {
+			Singleton<GlobalInfo>::getSingleton()->shaderReady = true;
+			return 0;
+		}
+		else {
+			Singleton<GlobalInfo>::getSingleton()->shaderReady = false;
+			return -1;
+		}
 	}
 
 }

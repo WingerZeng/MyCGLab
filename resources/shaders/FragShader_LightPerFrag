@@ -1,31 +1,53 @@
 #version 430 core
-out vec4 FragColor;
+/* outputs */
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 albedo;
+layout (location = 2) out vec3 worldPos;
+layout (location = 3) out vec3 normal;
+
+/* inputs */
 in vec3 aNormal;
 in vec3 geoNormal;
 in vec3 aWorldPos;
+
+/* lights variants */
+const int maxLightCnt = 10;
 struct Light{
-vec3 pos; 
-vec3 ambient; 
-vec3 bound[2];
-vec3 emission;
-bool castShadow;
-float farPlane;
-float nearPlane;
-float shadowOffset;
-float mapSize;
-samplerCube shadowMap;
+	vec3 pos; 
+	vec3 ambient; 
+	vec3 bound[2];
+	vec3 emission;
+	bool castShadow;
+	float farPlane;
+	float nearPlane;
+	float shadowOffset;
+	float mapSize;
+	samplerCube shadowMap;
 };
+struct LightValues{
+	vec3 extent;
+}lvalues[maxLightCnt];
+
+/* uniforms */
 uniform vec4 ourColor;
 uniform vec4 Le;
 uniform bool selected = false;
 uniform vec3 selectedColor;
-uniform Light lights[10];
+uniform Light lights[maxLightCnt];
 uniform int lightCount;
-const int PcfSampleCnt = 6;
-const int PcssSampleCnt = 4;
-const float PseudoRandomFactor = 0.4;
+
+/* constants */
+const int PcfSampleCnt = 4;
+const int PcssSampleCnt = 3;
+const float PseudoRandomFactor = 0.8;
+const float FullShadowedBlockerRate = 0.1;
 const float lightAreaScale = 1;
 const int PTable[65] = {59,25,32,4,51,54,28,62,38,8,52,26,22,47,0,49,2,30,63,20,50,58,44,1,17,7,35,31,61,55,39,53,33,18,5,19,11,48,24,56,46,15,43,29,27,12,6,45,37,57,9,10,13,60,41,16,64,23,40,34,3,36,21,42,14};
+const int RandMax = 64;
+const bool outputUnshadowedRate = false;
+
+/* global variants */
+int FragRandBase;
 
 vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receiverDist, int dim){
 	vec3 ret = vec3(0);
@@ -36,9 +58,29 @@ vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receive
 	return lights[lightIdx].emission * area * cosi / (receiverDist * receiverDist);
 }
 
-float myRand(float val){
-	int intval = int(val * (1e5+1) + aWorldPos.x * (1e4+1));
-	return PTable[intval%65] * 1.0 / 64;
+
+/*
+ *	For shadow map
+ */
+int myRand(int seed){
+	return PTable[seed];
+}
+
+float myRandFloat(int seed){
+	return 0;
+}
+
+float calBlockerDist(int lightIdx, vec3 lightVec){
+	float dBlocker = texture(lights[lightIdx].shadowMap, lightVec).r;
+	return dBlocker * (lights[lightIdx].farPlane - lights[lightIdx].nearPlane) + lights[lightIdx].nearPlane;
+}
+
+float calShadowEdgeFadeValue(int lightIdx, vec3 pProjectInLight, float fadeFactor, int dim1, int dim2){
+	float temp = 0;
+	float dist1 = min(pProjectInLight[dim1] - lights[lightIdx].bound[0][dim1], lights[lightIdx].bound[1][dim1] - pProjectInLight[dim1]);
+	float dist2 = min(pProjectInLight[dim2] - lights[lightIdx].bound[0][dim2], lights[lightIdx].bound[1][dim2] - pProjectInLight[dim2]);
+	temp = (dist1 / (lights[lightIdx].bound[1][dim1] - lights[lightIdx].bound[0][dim1]) + dist2 / (lights[lightIdx].bound[1][dim2] - lights[lightIdx].bound[0][dim2])) * fadeFactor;
+	return min(temp, 1.0);
 }
 
 float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
@@ -47,43 +89,39 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	//cal average blocker dist
 	float avgBlockerDist = 0;
 	float blockerCnt = 0;
-	float offset1 = (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) * lightAreaScale / PcssSampleCnt;
-	float offset2 = (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) * lightAreaScale / PcssSampleCnt;
+	float offset1 = lvalues[lightIdx].extent[d1] * lightAreaScale / PcssSampleCnt;
+	float offset2 = lvalues[lightIdx].extent[d1] * lightAreaScale / PcssSampleCnt;
 	//now don't consider light source with zero area
 	if(offset1<=1e-16 || offset2<=1e-16)
 		return 0;
+	int lightRandBase = myRand((FragRandBase + lightIdx) % 64);
 	for(int i=0;i<PcssSampleCnt;i++){
-		float d1offset = offset1 * i - (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) * lightAreaScale / 2;
-
+		float d1offset = offset1 * i - lvalues[lightIdx].extent[d1] * lightAreaScale / 2;
+		vec3 offset = {0,0,0};
+		offset[d1] = d1offset;
 		for(int j=0;j<PcssSampleCnt;j++){
-			float d2offset = offset2 * j - (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) * lightAreaScale / 2;
-			vec3 offset = {0,0,0};
-			offset[d1] = d1offset;
+			float d2offset = offset2 * j - lvalues[lightIdx].extent[d2] * lightAreaScale / 2;
 			offset[d2] = d2offset;
 			vec3 Vsa = lightVec + offset;
 
 			//pseudo-random
-			offset[d1] += ((myRand(Vsa[d1])-0.5)*PseudoRandomFactor + 0.5) * offset1;
-			offset[d2] += ((myRand(Vsa[d2])-0.5)*PseudoRandomFactor + 0.5) * offset2;
+			offset[d1] += ((myRandFloat(lightRandBase + i + j)-0.5)*PseudoRandomFactor + 0.5) * offset1;
+			offset[d2] += ((myRandFloat(lightRandBase + i + j + 1)-0.5)*PseudoRandomFactor + 0.5) * offset2;
 			Vsa = lightVec + offset;
 
-			float dBlocker = texture(lights[lightIdx].shadowMap, Vsa).r;
-			dBlocker = dBlocker * (lights[lightIdx].farPlane - lights[lightIdx].nearPlane) + lights[lightIdx].nearPlane;
+			float dBlocker = calBlockerDist(lightIdx, Vsa);
 			if(dBlocker < receiverDist - lights[lightIdx].shadowOffset){
 				//check blocker indeed block receiver to light
 				vec3 pBlocker = lights[lightIdx].pos + normalize(Vsa) * dBlocker;
 				//project blocker to light
-				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) * (aWorldPos[dim] - lights[lightIdx].pos[dim]) / (aWorldPos[dim] - pBlocker[dim]);
+				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) *  lightVec[dim] / (aWorldPos[dim] - pBlocker[dim]);
 				if(pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
-					float temp = 0;
 					//fade with distance
-					float dist1 = min(pProjectInLight[d1] - lights[lightIdx].bound[0][d1], lights[lightIdx].bound[1][d1] - pProjectInLight[d1]);
-					float dist2 = min(pProjectInLight[d2] - lights[lightIdx].bound[0][d2], lights[lightIdx].bound[1][d2] - pProjectInLight[d2]);
-					temp = (dist1 / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) + dist2 / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2])) * 4;
-					avgBlockerDist += dBlocker * dBlocker * min(temp, 1.0);
-					blockerCnt = blockerCnt + 1.0 * min(temp, 1.0);
+					float fadeVal = calShadowEdgeFadeValue(lightIdx, pProjectInLight, 4, d1, d2);
+					avgBlockerDist += dBlocker * dBlocker * fadeVal;
+					blockerCnt = blockerCnt + 1.0 * fadeVal;
 				}
 			}
 		}
@@ -96,8 +134,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	//PCF
 	int discardCnt = 0;
 	float ret = 0;
-	float wPenumbra1 = (receiverDist - avgBlockerDist) * lightAreaScale * (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) / avgBlockerDist;
-	float wPenumbra2 = (receiverDist - avgBlockerDist) * lightAreaScale * (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) / avgBlockerDist;
+	float wPenumbra1 = (receiverDist - avgBlockerDist) * lightAreaScale * lvalues[lightIdx].extent[d1] / avgBlockerDist;
+	float wPenumbra2 = (receiverDist - avgBlockerDist) * lightAreaScale * lvalues[lightIdx].extent[d2] / avgBlockerDist;
 	float pcfOffset1 = wPenumbra1 / PcfSampleCnt;
 	float pcfOffset2 = wPenumbra2 / PcfSampleCnt;
 	for(int i=0;i<PcfSampleCnt;i++){
@@ -110,12 +148,11 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 			vec3 Vsa = lightVec + offset;
 			
 			//pseudo-random
-			offset[d1] += ((myRand(Vsa[d1])-0.5)*PseudoRandomFactor + 0.5) * pcfOffset1;
-			offset[d2] += ((myRand(Vsa[d2])-0.5)*PseudoRandomFactor + 0.5) * pcfOffset2;
+			offset[d1] += ((myRandFloat(lightRandBase + i + j * PcfSampleCnt)-0.5)*PseudoRandomFactor + 0.5) * pcfOffset1;
+			offset[d2] += ((myRandFloat(lightRandBase + i + j * PcfSampleCnt + 1)-0.5)*PseudoRandomFactor + 0.5) * pcfOffset2;
 			Vsa = lightVec + offset;
-
-			float dBlocker = texture(lights[lightIdx].shadowMap, Vsa).r;
-			dBlocker = dBlocker * (lights[lightIdx].farPlane - lights[lightIdx].nearPlane) + lights[lightIdx].nearPlane;
+			
+			float dBlocker = calBlockerDist(lightIdx, Vsa);
 			if(dBlocker > receiverDist - lights[lightIdx].shadowOffset){
 				//not shadowed
 				ret += 1;
@@ -124,16 +161,13 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				//check blocker indeed block receiver to light
 				vec3 pBlocker = lights[lightIdx].pos + normalize(Vsa) * dBlocker;
 				//project blocker to light
-				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) * (aWorldPos[dim] - lights[lightIdx].pos[dim]) / (aWorldPos[dim] - pBlocker[dim]);
+				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) * (lightVec[dim]) / (aWorldPos[dim] - pBlocker[dim]);
 				if(pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
-					float temp = 0;
 					//fade with distance
-					float dist1 = min(pProjectInLight[d1] - lights[lightIdx].bound[0][d1], lights[lightIdx].bound[1][d1] - pProjectInLight[d1]);
-					float dist2 = min(pProjectInLight[d2] - lights[lightIdx].bound[0][d2], lights[lightIdx].bound[1][d2] - pProjectInLight[d2]);
-					temp = (dist1 / (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) + dist2 / (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2])) * 5;
-					ret+=max(1-temp,0);
+					float fadeVal = calShadowEdgeFadeValue(lightIdx, pProjectInLight, 5, d1, d2);
+					ret+=1-fadeVal;
 				}
 				else{
 					//ret+=1;
@@ -143,10 +177,10 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 		}
 	}
 	ret /= (PcfSampleCnt * PcfSampleCnt - discardCnt);
-	return ret;
+	//fade from full lit to penumbra
+	//return ret;
+	return mix(1, ret, min(1.0, blockerCnt * 1.0 / PcssSampleCnt / PcssSampleCnt / FullShadowedBlockerRate));
 }
-
-const bool outputUnshadowedRate = false;
 
 void main(){
 	if(selected){
@@ -156,13 +190,24 @@ void main(){
 	if(!outputUnshadowedRate){
 		FragColor += Le;
 	}
-	
+	worldPos = aWorldPos;
+	normal = normalize(aNormal);
+	albedo = ourColor;
+	return;
+
+	FragRandBase = int(dot(aWorldPos.xyz, vec3(1e3+1,1e4+1,1e5+1))) % (RandMax+1);
 	for(int i=0;i<lightCount;i++){
 		vec3 lightVec = aWorldPos - lights[i].pos;
 		vec3 normLightVec = normalize(lightVec);
 		float dReceiver = length(lightVec);
 		float brdf = max(-dot(aNormal,normLightVec),0);
 		vec3 totLight = lights[i].ambient;
+
+		/* precaculate some value */
+		for(int dim=0;dim<3;dim++){
+			lvalues[i].extent[dim] = lights[i].bound[1][dim] - lights[i].bound[0][dim];
+		}
+
 		/* hard shadow */
 		//float dBlocker = texture(lights[i].shadowMap, lightVec).r;
 		//dBlocker = dBlocker * (lights[i].farPlane - lights[i].nearPlane) + lights[i].nearPlane;
@@ -189,4 +234,5 @@ void main(){
 	if(outputUnshadowedRate){
 		FragColor /= lightCount;
 	}
+	
 }

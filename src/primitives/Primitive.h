@@ -47,7 +47,6 @@ public:
 	virtual void initializeGL() = 0;
 	virtual std::shared_ptr<Material> getMaterial() = 0;
 	virtual void paint(PaintInfomation* info, PaintVisitor* visitor);
-	virtual void initialize(PaintVisitor* visitor);
 
 	/* 界面信息接口 */
 	virtual QString name() { return ""; }; //#TODO Primitive名称功能

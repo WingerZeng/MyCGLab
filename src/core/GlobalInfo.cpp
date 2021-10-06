@@ -32,4 +32,15 @@ namespace mcl{
 		data->setChild("ExeDir", QCoreApplication::applicationDirPath());
 	}
 
+	int setGlobalData(std::string key, std::string value)
+	{
+		GLBPTR->data->setChild(QString::fromStdString(key), QString::fromStdString(value));
+		return 0;
+	}
+
+	std::shared_ptr<DataNode> getGlobalData(QString key, QString defValue)
+	{
+		return GLBPTR->data->fd(key, defValue);
+	}
+
 }

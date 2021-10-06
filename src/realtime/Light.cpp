@@ -124,9 +124,7 @@ namespace mcl {
 		shader->setUniformValue((lightname + ".nearPlane").c_str(), NearPlane);
 		shader->setUniformValue((lightname + ".shadowOffset").c_str(), shadowOffset);
 		shader->setUniformValue((lightname + ".mapSize").c_str(), smWidth);
-		GLFUNC->glActiveTexture(GL_TEXTURE0 + textureIdx);
-		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, fbo->textureId());
-		shader->setUniformValue((lightname + ".shadowMap").c_str(), textureIdx++);
+		GLFUNC->activeUniformTexture(GL_TEXTURE_CUBE_MAP, fbo->textureId(), (lightname + ".shadowMap"), shader);
 	}
 
 	std::shared_ptr<mcl::GLShadowMapFrameBufferObject> PointLight::getFbo()

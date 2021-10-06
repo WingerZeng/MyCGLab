@@ -2,11 +2,18 @@
 #include "mcl.h"
 #include "types.h"
 #include <QOpenGLFunctions_4_3_Core>
+#include <QOpenGLShaderProgram>
 #define GLFUNC mcl::GLFunctions::getSingletonPtr()
 namespace mcl {
-	class GLFunctions
+	class GLFunctions: public QOpenGLFunctions_4_3_Core
 	{
 	public:
-		static QOpenGLFunctions_4_3_Core* getSingletonPtr();
+		static GLFunctions* getSingletonPtr();
+		void activeUniformTexture(GLuint target, GLuint texid, std::string name, QOpenGLShaderProgram* shader);
+		void resetActiveTexture();
+	protected:
+		GLFunctions() {};
+	private:
+		int activedTexture = 0;
 	};
 }

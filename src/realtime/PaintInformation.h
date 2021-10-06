@@ -15,6 +15,13 @@ namespace mcl {
 		FILL_WIREFRAME
 	};
 
+	enum PaintStage {
+		LIGHT_PREPARE,
+		DEFFER_PREPARE,
+		DEFFER_LIGHTING,
+		FORWARD_SHADING
+	};
+
 	class PaintInfomation
 	{
 	public:
@@ -28,6 +35,8 @@ namespace mcl {
 		bool hasNormal = false;
 		Color3f selectedColor = Color3f(1,0,0);
 		int activeTextrueCnt = 0;
-		void setUniformValue(QOpenGLShaderProgram* shader);
+		void setUniformValue(QOpenGLShaderProgram* shader, PaintStage stage);
+
+		std::vector<GLuint> mtrTexIdx;
 	};
 }

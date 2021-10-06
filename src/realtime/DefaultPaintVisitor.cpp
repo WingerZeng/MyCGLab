@@ -12,6 +12,7 @@ namespace mcl{
 	//#TODO1 info可以优化为栈模式
 	int DefaultPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	{
+		//#TODO0 线框的渲染可以放在延迟渲染之后的正向渲染中
 		//do before paint
 		if (tri->selected()) {
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
@@ -30,7 +31,8 @@ namespace mcl{
 
 			info->hasNormal = tri->hasNormal();
 
-			info->setUniformValue(shader);
+			GLFUNC->resetActiveTexture();
+			info->setUniformValue(shader, DEFFER_PREPARE);
 			tri->getMaterial()->prepareGL(shader);
 
 			tri->getVAO()->bind();
@@ -45,7 +47,7 @@ namespace mcl{
 		}
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {
 			LineShader::ptr()->bind();
-			info->setUniformValue(LineShader::ptr());
+			info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
 			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
 			GLFUNC->glPolygonOffset(-1, -1);
@@ -68,11 +70,6 @@ namespace mcl{
 		return 0;
 	}
 
-	int DefaultPaintVisitor::initTris(PTriMesh* tri)
-	{
-		return 0;
-	}
-
 	int DefaultPaintVisitor::paintPoint(PaintInfomation* info, PPoint* point)
 	{
 		//do before paint
@@ -86,7 +83,7 @@ namespace mcl{
 
 		point->getVAO().bind();
 		PointShader::ptr()->bind();
-		info->setUniformValue(PointShader::ptr());
+		info->setUniformValue(PointShader::ptr(), FORWARD_SHADING);
 		PointShader::ptr()->setUniformValue("ourColor", QVector4D(point->color().x(), point->color().y(), point->color().z(), 1.0f));
 
 		GLFUNC->glDrawArrays(GL_POINTS, 0, 1);
@@ -101,14 +98,6 @@ namespace mcl{
 		GLFUNC->glPolygonOffset(0, 0);
 		info->modelMat = tempTrans_;
 		info->selected = tempSelected_;
-		return 0;
-	}
-
-	//#TODO0 这些顶点属性的设置全部放到VAO初始化过程中
-	int DefaultPaintVisitor::initPoint(PPoint* point)
-	{
-		PointShader::ptr()->setAttributeBuffer(0, GL_FLOAT, 0, 3, 0);
-		PointShader::ptr()->enableAttributeArray(0);
 		return 0;
 	}
 
@@ -131,13 +120,15 @@ namespace mcl{
 			{
 				shader = LightPerFragShader::ptr();
 				shader->bind();
-				info->setUniformValue(shader);
+				GLFUNC->resetActiveTexture();
+				info->setUniformValue(shader, DEFFER_PREPARE);
 				shader->setUniformValue("ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
 			else {
 				shader = CommonShader::ptr();
 				shader->bind();
-				info->setUniformValue(shader);
+				GLFUNC->resetActiveTexture();
+				info->setUniformValue(shader, DEFFER_PREPARE);
 				shader->setUniformValue("ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
 
@@ -154,7 +145,8 @@ namespace mcl{
 		}
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {  //选中时隐藏
 			LineShader::ptr()->bind();
-			info->setUniformValue(LineShader::ptr());
+			GLFUNC->resetActiveTexture();
+			info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
 			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
 			GLFUNC->glPolygonOffset(-1, -1);
@@ -177,20 +169,6 @@ namespace mcl{
 		return 0;
 	}
 
-	int DefaultPaintVisitor::initPolygons(PPolygonMesh* polygon)
-	{
-		polygon->getVAO()->bind();
-		polygon->getVBO()->bind();
-		CommonShader::ptr()->setAttributeBuffer(0, GL_FLOAT, 0, 3, 0);
-		CommonShader::ptr()->enableAttributeArray(0);
-		LightPerFragShader::ptr()->setAttributeBuffer(0, GL_FLOAT, 0, 3, 0);
-		LightPerFragShader::ptr()->enableAttributeArray(0);
-
-		LineShader::ptr()->setAttributeBuffer(0, GL_FLOAT, 0, 3, 0);
-		LineShader::ptr()->enableAttributeArray(0);
-		return 0;
-	}
-
 	int DefaultPaintVisitor::paintLines(PaintInfomation* info, PLines* lines)
 	{
 		//do before paint
@@ -205,7 +183,8 @@ namespace mcl{
 		//do paint
 		lines->getVAO().bind();
 		LineShader::ptr()->bind();
-		info->setUniformValue(LineShader::ptr());
+		GLFUNC->resetActiveTexture();
+		info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
 		LineShader::ptr()->setUniformValue("ourColor", QVector4D(lines->color().x(), lines->color().y(), lines->color().z(), 1.0f));
 		if (lines->isLoop())
 			GLFUNC->glDrawArrays(GL_LINE_LOOP, 0, lines->getPtNum());
@@ -222,12 +201,48 @@ namespace mcl{
 		return 0;
 	}
 
-	int DefaultPaintVisitor::initLines(PLines* lines)
+	int DeferedMtrPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	{
-		lines->getVAO().bind();
-		lines->getVBO().bind();
-		LineShader::ptr()->setAttributeBuffer(0, GL_FLOAT, 0, 3, 0);
-		LineShader::ptr()->enableAttributeArray(0);
+		//#TODO0 线框的渲染可以放在延迟渲染之后的正向渲染中
+		//do before paint
+		if (tri->selected()) {
+			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(-1, -1);
+		}
+		QMatrix4x4 tempTrans_ = info->modelMat;
+		bool tempSelected_ = info->selected;
+		info->modelMat = info->modelMat * tri->localTransform().toQMatrix();
+		info->selected = tri->selected() || info->selected;
+
+		//paint
+		if (info->fillmode == FILL || info->fillmode == FILL_WIREFRAME) {
+			QOpenGLShaderProgram* shader;
+			shader = LightPerFragShader::ptr();
+			shader->bind();
+
+			info->hasNormal = tri->hasNormal();
+
+			GLFUNC->resetActiveTexture();
+			info->setUniformValue(shader, DEFFER_PREPARE);
+			tri->getMaterial()->prepareGL(shader);
+
+			tri->getVAO()->bind();
+			GLFUNC->glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
+
+			GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+			GLFUNC->glPolygonOffset(0, 0);
+
+			info->hasNormal = false;
+			shader->release();
+		}
+
+		//do after paint
+		GLFUNC->glDisable(GL_POLYGON_OFFSET_FILL);
+		GLFUNC->glPolygonOffset(0, 0);
+		info->modelMat = tempTrans_;
+		info->selected = tempSelected_;
+
 		return 0;
 	}
 

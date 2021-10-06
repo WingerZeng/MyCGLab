@@ -70,8 +70,6 @@ namespace mcl {
 		virtual void keyReleaseEvent(QKeyEvent* ev) override;
 		void doPrimAdd();
 
-		virtual std::shared_ptr<PaintVisitor> getDafaultPainter();
-
 	signals:
 		void updated(UpdateReason reason);
 
@@ -98,15 +96,18 @@ namespace mcl {
 
 		int rbo;
 
-		std::shared_ptr<PaintVisitor> painter;
+		std::shared_ptr<PaintVisitor> mtrPainter;
+		std::shared_ptr<PaintVisitor> deferedPainter;
+		std::shared_ptr<PaintVisitor> forwardPainter;
 		std::shared_ptr<GammaPaintVisitor> gammaCorrector;
 		std::shared_ptr<GLColorFrameBufferObject> fbo1;
 		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
+		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;
 		std::shared_ptr<PTriMesh> billboard;
 
 		Bound3f sceneBound;
 
-		const int sampleRate = 16;
+		const int sampleRate = 8;
 	};
 
 	template<class T>

@@ -84,6 +84,7 @@ namespace mcl {
 	class GLColorFrameBufferObject;
 	class GLShadowMapFrameBufferObject;
 	class GLMultiSampleFrameBufferObject;
+	class GLMtrFrameBufferObject;
 	struct SurfaceRecord;
 	class Material;
 	class Bsdf;

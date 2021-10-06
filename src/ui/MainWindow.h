@@ -40,7 +40,6 @@ namespace mcl {
 		int resize(int w, int h);
 		int softRenderer();
 		int runRayTrace();
-		int setData(std::string key, std::string value);
 		int saveRtFilm(PathString path);
 
 	private:
@@ -64,8 +63,6 @@ namespace mcl {
 		std::shared_ptr<ItemManager> itemMng_;
 
 		std::unique_ptr<SoftRenderWidget> softrdWgt_;
-
-		std::shared_ptr<DataNode> globalData;
 
 		QLabel* curRtLabel = nullptr;
 		QMetaObject::Connection labelcon;

@@ -17,9 +17,7 @@ namespace mcl {
 
 
 		virtual void paint(PaintInfomation* info, PaintVisitor* visitor) override;
-
-
-		virtual void initialize(PaintVisitor* visitor) override;
+		
 
 		QOpenGLVertexArrayObject& getVAO() { return vao; }
 		QOpenGLBuffer& getVBO() { return vbo; }

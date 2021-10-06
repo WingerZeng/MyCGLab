@@ -19,5 +19,13 @@ namespace mcl {
 	private:
 		GLfloat gamma;
 	};
+
+	class DeferedPaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+
+		virtual int initTris(PTriMesh* tri) override;
+	};
 }
 

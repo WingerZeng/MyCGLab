@@ -11,26 +11,28 @@ namespace mcl {
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 
 
-		virtual int initTris(PTriMesh* tri) override;
-
-
 		virtual int paintPoint(PaintInfomation* info, PPoint* point) override;
-
-
-		virtual int initPoint(PPoint* point) override;
 
 
 		virtual int paintPolygons(PaintInfomation* info, PPolygonMesh* polygon) override;
 
 
-		virtual int initPolygons(PPolygonMesh* polygon) override;
-
-
 		virtual int paintLines(PaintInfomation* info, PLines* lines) override;
 
+	};
 
-		virtual int initLines(PLines* lines) override;
+	class DeferedMtrPaintVisitor : public PaintVisitor
+	{
+	public:
+		DeferedMtrPaintVisitor() {};
 
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
+
+	class ForwardPaintVisitor : public PaintVisitor
+	{
+	public:
+		ForwardPaintVisitor() {};
 	};
 }
 

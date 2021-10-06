@@ -4,6 +4,7 @@
 #include "PaintInformation.h"
 #include "shaders.h"
 #include "PaintVisitor.h"
+#include "GLFunctions.h"
 namespace mcl{
 	
 	PLines::~PLines()
@@ -30,15 +31,13 @@ namespace mcl{
 		vbo.create();
 		vbo.bind();
 		vbo.allocate(&pts_[0], pts_.size() * sizeof(Float));
+
+		GLFUNC->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		GLFUNC->glEnableVertexAttribArray(0);
 	}
 
 	void PLines::paint(PaintInfomation* info, PaintVisitor* visitor)
 	{
 		visitor->paintLines(info, this);
-	}
-
-	void PLines::initialize(PaintVisitor* visitor)
-	{
-		visitor->initLines(this);
 	}
 }

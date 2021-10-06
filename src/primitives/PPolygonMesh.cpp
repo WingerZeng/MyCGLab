@@ -8,6 +8,7 @@
 #include "realtime/Scene.h"
 #include "ui/MainWindow.h"
 #include "ItemManager.h"
+#include "GLFunctions.h"
 namespace mcl{
 	
 	PPolygonMesh::PPolygonMesh(std::shared_ptr<PTriMesh> trimesh)
@@ -127,6 +128,8 @@ namespace mcl{
 		vbo->create();
 		vbo->bind();
 		vbo->allocate(&tessPts_[0], tessPts_.size() * sizeof(Float));
+		GLFUNC->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		GLFUNC->glEnableVertexAttribArray(0);
 
 		//生成边界点
 		for (const auto& plg : plgs_) {
@@ -144,6 +147,8 @@ namespace mcl{
 		linevbo->create();
 		linevbo->bind();
 		linevbo->allocate(&boundPts_[0], boundPts_.size() * sizeof(Float));
+		GLFUNC->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(Float), 0);
+		GLFUNC->glEnableVertexAttribArray(0);
 	}
 
 	std::unique_ptr<mcl::Primitive> PPolygonMesh::clone()

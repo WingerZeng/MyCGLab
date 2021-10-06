@@ -32,7 +32,6 @@ namespace mcl {
 		void generateNormal();
 
 		virtual void paint(PaintInfomation* info, PaintVisitor* visitor) override;
-		virtual void initialize(PaintVisitor* visitor) override;
 		
 		std::shared_ptr<QOpenGLVertexArrayObject> getVAO();
 		std::shared_ptr<QOpenGLVertexArrayObject> getLineVAO();

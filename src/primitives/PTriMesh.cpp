@@ -138,11 +138,6 @@ namespace mcl{
 		GLFUNC->glEnableVertexAttribArray(0);
 	}
 
-	void PTriMesh::initialize(PaintVisitor* visitor)
-	{
-		visitor->initTris(this);
-	}
-
 	std::shared_ptr<QOpenGLVertexArrayObject> PTriMesh::getVAO()
 	{
 		return vao;

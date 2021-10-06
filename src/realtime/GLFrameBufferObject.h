@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include "mcl.h"
 #include "types.h"
 namespace mcl {
@@ -11,7 +12,7 @@ namespace mcl {
 
 		virtual void resize(int height, int width);
 
-		virtual int textureId() = 0;
+		virtual int textureId(int idx=0) = 0;
 
 		GLuint fboId() { return fbo; };
 
@@ -30,7 +31,7 @@ namespace mcl {
 
 		void resize(int height, int width) override;
 
-		int textureId()  override { return tbo; }
+		int textureId(int idx=0) override { return tbo; }
 
 	private:
 		GLuint rbo;
@@ -41,13 +42,13 @@ namespace mcl {
 	{
 	public:
 		GLMultiSampleFrameBufferObject(int nsample);
-		~GLMultiSampleFrameBufferObject();;
+		~GLMultiSampleFrameBufferObject();
 
 		void bind() override;
 
 		void resize(int height, int width) override;
 
-		int textureId() override;
+		int textureId(int idx=0) override;
 
 		void copyToFbo(GLuint fbo);
 
@@ -67,10 +68,46 @@ namespace mcl {
 
 		void resize(int height, int width) override;
 
-		int textureId() override;
+		int textureId(int idx=0) override;
 
 	private:
 		GLuint cubetbo;
+	};
+
+	class GLMtrFrameBufferObject : public GLFrameBufferObject
+	{
+
+	public:
+		GLMtrFrameBufferObject(int nsample);
+		~GLMtrFrameBufferObject();
+
+		virtual void bind() override;
+
+		virtual void resize(int height, int width) override;
+
+		virtual int textureId(int idx=0) override;
+
+		std::vector<GLuint> transferedTextureId();
+
+		enum TargetType
+		{
+			COLOR = 0,
+			ALBEDO,
+			WORLD_POS,
+			NORMAL,
+			DEPTH,
+		};
+		static const int nTargetType = 5;
+
+		static std::array<GLuint, nTargetType> targetFromats;
+		static std::array<GLuint, nTargetType> targetBaseFromats;
+		static std::array<GLuint, nTargetType> targetUnitFromats;
+
+	private:
+		int nsample;
+		GLuint targetTex[nTargetType];
+		GLuint outputTex[nTargetType];
+		GLuint interFbo;
 	};
 }
 

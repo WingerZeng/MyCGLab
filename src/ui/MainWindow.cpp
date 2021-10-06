@@ -16,6 +16,7 @@
 #include "Bsdf.h"
 #include "RTLight.h"
 #include "utilities.h"
+#include "GlobalInfo.h"
 namespace mcl{
 	
 	MainWindow::MainWindow(QWidget* parent)
@@ -32,8 +33,6 @@ namespace mcl{
 		setupScripts();
 
 		itemMng_.reset(new ItemManager(ui->treeWidget_general));
-
-		globalData = std::make_shared<DataNode>();
 	}
 
 	void MainWindow::setupScripts()
@@ -119,9 +118,9 @@ namespace mcl{
 		std::shared_ptr<RayTracer> raytracer(new DirectLightPathTracer(film, sampler));
 
 		/* init parameters */
-		auto ns = getData("samplePerPixelDim");
+		auto ns = getGlobalData("samplePerPixelDim");
 		raytracer->setSampleNum(ns ? ns->toInt() : 8);
-		auto ts = getData("threadNum");
+		auto ts = getGlobalData("threadNum");
 		raytracer->setThreadNum(ts ? ts->toInt() : 6);
 
 		//raytracer->renderPixel(*rtscene, Point2i(130,90));
@@ -168,22 +167,10 @@ namespace mcl{
 		return 0;
 	}
 
-	int MainWindow::setData(std::string key, std::string value)
-	{
-		globalData->setChild(QString::fromStdString(key), QString::fromStdString(value));
-		return 0;
-	}
-
 	int MainWindow::saveRtFilm(PathString path)
 	{
 		QString qstr = QString::fromStdString(path.str);
 		curFilm->saveToBmp(qstr);
 		return 0;
 	}
-
-	std::shared_ptr<DataNode> MainWindow::getData(QString key)
-	{
-		return globalData->fd(key);
-	}
-
 }

@@ -128,6 +128,8 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(FragShader_Gamma);
 
+	DEF_SHADER_SOURCE(FragShader_Defered);
+
 	DEF_SHADER_SOURCE(VertexShader_CubeShadowMap);
 
 	DEF_SHADER_SOURCE(GeoShader_CubeShadowMap);
@@ -147,7 +149,8 @@ namespace mcl {
 	using LightPerFragShader = Shader<VertexShader_OutputPos, GeoShader_LightedMesh_CalNormal, FragShader_LightPerFrag>;
 	using GammaCorrectShader = Shader<VertexShader_PostProc, FragShader_Gamma>;
 	using CubeShaodwMapShader = Shader<VertexShader_CubeShadowMap, GeoShader_CubeShadowMap, FragShader_ShadowMap>;
+	using DeferedShader = Shader<VertexShader_PostProc, FragShader_Defered>;
 
-	int clearAllShaders();
+	int initAllShaders();
 }
 

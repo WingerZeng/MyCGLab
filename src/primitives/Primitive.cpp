@@ -39,11 +39,6 @@ void Primitive::paint(PaintInfomation* info, PaintVisitor* visitor)
 	LOG(FATAL) << "unimplemented method!";
 }
 
-void Primitive::initialize(PaintVisitor* visitor)
-{
-	LOG(FATAL) << "unimplemented method!";
-}
-
 std::unique_ptr<mcl::Primitive> Primitive::clone()
 {
 	LOG(FATAL) << "unimplemented method!";
