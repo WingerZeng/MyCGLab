@@ -10,8 +10,6 @@ namespace mcl {
 
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 
-		virtual int initTris(PTriMesh* tri) override;
-
 	private:
 		std::shared_ptr<PointLight> light;
 	};

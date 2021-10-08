@@ -7,25 +7,24 @@ namespace mcl {
 	{
 	};
 
-	class GammaPaintVisitor : public PostProcPaintVisitor
+	class ToneMapPaintVisitor : public PostProcPaintVisitor
 	{
 	public:
-		GammaPaintVisitor(GLfloat gamma = 2.2);
+		ToneMapPaintVisitor();
 
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
-
-		virtual int initTris(PTriMesh* tri) override;
-
-	private:
-		GLfloat gamma;
 	};
 
-	class DeferedPaintVisitor : public PostProcPaintVisitor
+	class DeferredDirectLightPaintVisitor : public PostProcPaintVisitor
 	{
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
 
-		virtual int initTris(PTriMesh* tri) override;
+	class DeferredSsdoPaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
 }
 

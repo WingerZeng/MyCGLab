@@ -8,6 +8,7 @@ uniform sampler2D worldPos;
 uniform sampler2D normal;
 uniform sampler2D depth;
 uniform mat4 world2Screen;
+//#TODO0
 uniform float sceneExtent = 1;
 
 /* lights variants */
@@ -32,16 +33,14 @@ uniform Light lights[maxLightCnt];
 uniform int lightCount;
 
 /* constants */
-const int PcfSampleCnt = 5;
-const int PcssSampleCnt = 3;
-const float PseudoRandomFactor = 1;
+const float noiseScale = 0.01;
+const float PI = 3.14159269;
+const int PcfSampleCnt = 6;
+const int PcssSampleCnt = 4;
+const float PseudoRandomFactor = 0.8;
 const float FullShadowedBlockerRate = 0.1;
 const float lightAreaScale = 1;
 const bool outputUnshadowedRate = false;
-
-/* SSDO variants */
-const int SsdoSampleCnt = 10;
-uniform float SsdoSampleRadius = 0.3;
 
 /* global variants */
 vec3 aWorldPos;
@@ -49,7 +48,6 @@ vec3 aNormal;
 vec3 aAlbedo;
 vec4 aFragColor;
 float aDepth;
-vec4 b,t;
 
 /* noise function */
 float random(float x)
@@ -62,15 +60,15 @@ float random(vec3 v3)
     return fract(sin(dot(cross(v3, vec3(12.9898,78.233,21.3121)), vec3(-1132.21, 16.353, -1332.23))) * 43758.5453123);
 }
 vec3 random3(vec3 v3){
-    v3 = vec3(dot(v3,vec3(127.1,311.7,123.7)),
-              dot(v3,vec3(269.5,183.3,812.321)),
-			  dot(v3,vec3(-251.13,918.13,-772.13)));
-    return -1.0 + 2.0*fract(sin(v3)*43758.5453123);
+    v3 = vec3(dot(v3,vec3(127.1,-311.7,123.7)),
+              dot(v3,vec3(269.5,-183.3,812.321)),
+			  dot(v3,vec3(251.13,918.13,-772.13)));
+    return -1.0 + 2.0*fract(sin(v3)*1375896.453);
 }
 // Gradient Noise by Inigo Quilez - iq/2013
 // https://www.shadertoy.com/view/XdXGW8
 float noise(vec3 v3) {
-	v3 *= sceneExtent * 100;
+	v3 *= sceneExtent / noiseScale;
     vec3 i = floor(v3);
     vec3 f = fract(v3);
 
@@ -84,6 +82,9 @@ float noise(vec3 v3) {
 						dot( random3(i + vec3(1.0,0.0,1.0) ), f - vec3(1.0,0.0,1.0) ), u.x),
 				   mix( dot( random3(i + vec3(0.0,1.0,1.0) ), f - vec3(0.0,1.0,1.0) ),
 						dot( random3(i + vec3(1.0,1.0,1.0) ), f - vec3(1.0,1.0,1.0) ), u.x), u.y), u.z);
+}
+vec3 noise3(vec3 v3) {
+	return vec3(noise(v3),noise(v3 + sceneExtent * 12.414),noise(v3 + sceneExtent * 532.1365));
 }
 
 vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receiverDist, int dim){
@@ -133,9 +134,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 			vec3 Vsa = lightVec + offset;
 
 			//pseudo-random
-			//#TODO noise1总是返回同一个值？
-			offset[d1] += (noise(Vsa)*0.5*PseudoRandomFactor + 0.5) * offset1;
-			offset[d2] += (noise(Vsa)*0.5*PseudoRandomFactor + 0.5) * offset2;
+			offset[d1] += (random(Vsa)*0.5*PseudoRandomFactor + 0.5) * offset1;
+			offset[d2] += (random(Vsa)*0.5*PseudoRandomFactor + 0.5) * offset2;
 			Vsa = lightVec + offset;
 
 			float dBlocker = calBlockerDist(lightIdx, Vsa);
@@ -177,8 +177,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 			vec3 Vsa = lightVec + offset;
 			
 			//pseudo-random
-			offset[d1] += (noise(Vsa)*0.5*PseudoRandomFactor + 0.5) * pcfOffset1;
-			offset[d2] += (noise(Vsa)*0.5*PseudoRandomFactor + 0.5) * pcfOffset2;
+			offset[d1] += (random(Vsa)*0.5*PseudoRandomFactor + 0.5) * pcfOffset1;
+			offset[d2] += (random(Vsa)*0.5*PseudoRandomFactor + 0.5) * pcfOffset2;
 			Vsa = lightVec + offset;
 			
 			float dBlocker = calBlockerDist(lightIdx, Vsa);
@@ -211,52 +211,29 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	return mix(1, ret, min(1.0, blockerCnt * 1.0 / PcssSampleCnt / PcssSampleCnt / FullShadowedBlockerRate));
 }
 
-vec3 SSDO(vec2 rand2D){
-	vec3 sphereVec;
-	//transform rand2D to sphere vec
-
-
-	return vec3(1,1,1);
-}
-
 void main(){
+	//prepare global value
+	//mtr values
 	aWorldPos = texture(worldPos, texCoord).xyz;
 	aNormal = texture(normal, texCoord).xyz;
 	aAlbedo = texture(albedo, texCoord).xyz;
 	aFragColor = texture(fragColor, texCoord);
 	aDepth = texture(depth, texCoord).r;
 	FragColor += aFragColor;
-	
-	//prepare global value
-	//if(abs())
-
-	
-	vec3 totLight;
-	
-	//calculate ambient occlusion
-	for(int i=0;i<lightCount;i++){
-		totLight += lights[i].ambient;
-	}
-	vec3 ssdoValue;
-	for(int i=0;i<SsdoSampleCnt;i++){
-		vec2 rand2D;
-		//#TODO0 Sample
-		ssdoValue+=SSDO(rand2D);
-	}
-	totLight=(ssdoValue / SsdoSampleCnt) * totLight;
 
 	//calculate direct light
+	vec3 totLight;
 	for(int i=0;i<lightCount;i++){
 		vec3 lightVec = aWorldPos - lights[i].pos;
 		vec3 normLightVec = normalize(lightVec);
 		float dReceiver = length(lightVec);
 		float cosTheta = max(-dot(aNormal,normLightVec),0);
-
-		/* precaculate some value */
+	
+		/* pre-calculate some value */
 		for(int dim=0;dim<3;dim++){
 			lvalues[i].extent[dim] = lights[i].bound[1][dim] - lights[i].bound[0][dim];
 		}
-
+	
 		/* hard shadow */
 		//float dBlocker = texture(lights[i].shadowMap, lightVec).r;
 		//dBlocker = dBlocker * (lights[i].farPlane - lights[i].nearPlane) + lights[i].nearPlane;
@@ -278,6 +255,7 @@ void main(){
 				totLight += cosTheta*unshadowedRate*calEmissionIn(i,lightVec,normLightVec,dReceiver,dim);
 		}
 	} 
+
 	if(!outputUnshadowedRate)
 		FragColor += (vec4(aAlbedo*totLight,1.0)); 
 	if(outputUnshadowedRate){

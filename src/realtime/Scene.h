@@ -97,10 +97,12 @@ namespace mcl {
 		int rbo;
 
 		std::shared_ptr<PaintVisitor> mtrPainter;
-		std::shared_ptr<PaintVisitor> deferedPainter;
+		std::shared_ptr<PaintVisitor> deferredDirLightPainter;
+		std::shared_ptr<PaintVisitor> deferredSsdoPaintVisitor;
 		std::shared_ptr<PaintVisitor> forwardPainter;
-		std::shared_ptr<GammaPaintVisitor> gammaCorrector;
+		std::shared_ptr<ToneMapPaintVisitor> toneMapPainter;
 		std::shared_ptr<GLColorFrameBufferObject> fbo1;
+		std::shared_ptr<GLColorFrameBufferObject> fbo2;
 		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
 		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;
 		std::shared_ptr<PTriMesh> billboard;

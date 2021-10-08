@@ -9,17 +9,19 @@ namespace mcl{
 		LineShader::clear();
 		PointShader::clear();
 		LightPerFragShader::clear();
-		GammaCorrectShader::clear();
+		ToneMapShader::clear();
 		CubeShaodwMapShader::clear();
-		DeferedShader::clear();
+		DeferredDirectLightShader::clear();
+		DeferredSsdoShader::clear();
 		if (CommonShader::ptr() &&
 			LightShader::ptr() &&
 			LineShader::ptr() &&
 			PointShader::ptr() &&
 			LightPerFragShader::ptr() &&
-			GammaCorrectShader::ptr() &&
+			ToneMapShader::ptr() &&
 			CubeShaodwMapShader::ptr() &&
-			DeferedShader::ptr()) {
+			DeferredDirectLightShader::ptr() &&
+			DeferredSsdoShader::ptr()) {
 			Singleton<GlobalInfo>::getSingleton()->shaderReady = true;
 			return 0;
 		}

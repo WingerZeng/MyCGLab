@@ -1,7 +1,5 @@
 #include "GLFrameBufferObject.h"
 #include "GLFunctions.h"
-//#TEST
-#include "MainWindow.h"
 #include "Scene.h"
 namespace mcl {
 	
@@ -42,7 +40,7 @@ namespace mcl {
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		GLFUNC->glBindTexture(GL_TEXTURE_2D, tbo);
-		GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
 
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 		GLFUNC->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8, width, height);
@@ -91,7 +89,7 @@ namespace mcl {
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mstbo);
-		GLFUNC->glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nsample, GL_RGB, width, height, GL_TRUE);
+		GLFUNC->glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nsample, GL_RGB16F, width, height, GL_TRUE);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, msrbo);
 		GLFUNC->glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsample, GL_DEPTH32F_STENCIL8, width, height);
 		GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, mstbo, 0);
@@ -194,6 +192,8 @@ namespace mcl {
 			GLFUNC->glBindTexture(GL_TEXTURE_2D, outputTex[i]);
 			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
@@ -271,24 +271,24 @@ namespace mcl {
 	}
 
 	std::array<GLuint, GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetFromats = {
-		GL_RGBA8, //COLOR
-		GL_RGBA8, //ALBEDO
+		GL_RGB16F, //COLOR
+		GL_RGB16F, //ALBEDO
 		GL_RGB32F,//WORLD POS
 		GL_RGB32F,//NORMAL
 		GL_DEPTH_COMPONENT, //DEPTH
 	};
 
 	std::array<GLuint, mcl::GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetBaseFromats = {
-		GL_RGBA, //COLOR
-		GL_RGBA, //ALBEDO
+		GL_RGB, //COLOR
+		GL_RGB, //ALBEDO
 		GL_RGB,//WORLD POS
 		GL_RGB,//NORMAL
 		GL_DEPTH_COMPONENT, //DEPTH
 	};
 
 	std::array<GLuint, mcl::GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetUnitFromats = {
-		GL_UNSIGNED_BYTE, //COLOR
-		GL_UNSIGNED_BYTE, //ALBEDO
+		GL_FLOAT, //COLOR
+		GL_FLOAT, //ALBEDO
 		GL_FLOAT,//WORLD POS
 		GL_FLOAT,//NORMAL
 		GL_FLOAT, //DEPTH

@@ -126,9 +126,11 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(VertexShader_PostProc);
 
-	DEF_SHADER_SOURCE(FragShader_Gamma);
+	DEF_SHADER_SOURCE(FragShader_ToneMap);
 
-	DEF_SHADER_SOURCE(FragShader_Defered);
+	DEF_SHADER_SOURCE(FragShader_DeferredDirectLight);
+
+	DEF_SHADER_SOURCE(FragShader_DeferredSSDO);
 
 	DEF_SHADER_SOURCE(VertexShader_CubeShadowMap);
 
@@ -147,10 +149,10 @@ namespace mcl {
 	using LineShader = Shader<VertexShader_Mesh, GeoShader_Line, FragShader_Mesh>;
 	using PointShader = Shader<VertexShader_Mesh, GeoShader_Point, FragShader_Mesh>;
 	using LightPerFragShader = Shader<VertexShader_OutputPos, GeoShader_LightedMesh_CalNormal, FragShader_LightPerFrag>;
-	using GammaCorrectShader = Shader<VertexShader_PostProc, FragShader_Gamma>;
+	using ToneMapShader = Shader<VertexShader_PostProc, FragShader_ToneMap>;
 	using CubeShaodwMapShader = Shader<VertexShader_CubeShadowMap, GeoShader_CubeShadowMap, FragShader_ShadowMap>;
-	using DeferedShader = Shader<VertexShader_PostProc, FragShader_Defered>;
-
+	using DeferredDirectLightShader = Shader<VertexShader_PostProc, FragShader_DeferredDirectLight>;
+	using DeferredSsdoShader = Shader<VertexShader_PostProc, FragShader_DeferredSSDO>;
 	int initAllShaders();
 }
 

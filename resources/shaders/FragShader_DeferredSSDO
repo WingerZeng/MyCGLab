@@ -1,0 +1,200 @@
+#version 430 core
+out vec4 FragColor;
+in vec2 texCoord;
+
+uniform sampler2D fragColor;
+uniform sampler2D albedo;
+uniform sampler2D worldPos;
+uniform sampler2D normal;
+uniform sampler2D depth;
+uniform mat4 world2Screen;
+//#TODO0
+uniform float sceneExtent = 1;
+
+/* lights variants */
+const int maxLightCnt = 10;
+struct Light{
+	vec3 pos; 
+	vec3 ambient; 
+	vec3 bound[2];
+	vec3 emission;
+	bool castShadow;
+	float farPlane;
+	float nearPlane;
+	float shadowOffset;
+	float mapSize;
+	samplerCube shadowMap;
+};
+struct LightValues{
+	vec3 extent;
+}lvalues[maxLightCnt];
+
+uniform Light lights[maxLightCnt];
+uniform int lightCount;
+
+/* constants */
+const float noiseScale = 0.01;
+const float PI = 3.14159269;
+
+/* SSDO variants */
+const int SsdoUnitSphereSampleCnt = 6; 
+const int SsdoRadiusSampleCnt = 4;
+const int SsdoTotalSampleCnt = SsdoRadiusSampleCnt * SsdoUnitSphereSampleCnt * SsdoUnitSphereSampleCnt; 
+const float attRefDist = sceneExtent/10;
+uniform float SsdoSampleRadiusFactor = 0.3;
+float SsdoSampleRadius;
+vec3 totalAmbient;
+
+/* global variants */
+vec3 aWorldPos;
+vec3 aNormal;
+vec3 aAlbedo;
+vec4 aFragColor;
+float aDepth;
+vec3 b,t;
+
+/* noise function */
+float random(float x)
+{
+    float y = fract(sin(x)*100001.0);
+    return y;
+}
+float random(vec3 v3)
+{
+    return fract(sin(dot(cross(v3, vec3(12.9898,78.233,21.3121)), vec3(-1132.21, 16.353, -1332.23))) * 43758.5453123);
+}
+vec3 random3(vec3 v3){
+    v3 = vec3(dot(v3,vec3(127.1,-311.7,123.7)),
+              dot(v3,vec3(269.5,-183.3,812.321)),
+			  dot(v3,vec3(251.13,918.13,-772.13)));
+	vec3 ret = sin(v3)*1375896.453;
+    v3 = vec3(dot(v3,vec3(251.13,918.13,-772.13)),
+              dot(v3,vec3(127.1,-311.7,123.7)),
+			  dot(v3,vec3(269.5,-183.3,812.321)));
+	ret = cos(v3) * ret;
+    return -1.0 + 2.0*fract(ret);
+}
+// Gradient Noise by Inigo Quilez - iq/2013
+// https://www.shadertoy.com/view/XdXGW8
+float noise(vec3 v3) {
+	v3 *= sceneExtent / noiseScale;
+    vec3 i = floor(v3);
+    vec3 f = fract(v3);
+
+    vec3 u = f*f*(3.0-2.0*f);
+																	 
+    return mix(mix(mix( dot( random3(i + vec3(0.0,0.0,0.0) ), f - vec3(0.0,0.0,0.0) ),
+						dot( random3(i + vec3(1.0,0.0,0.0) ), f - vec3(1.0,0.0,0.0) ), u.x),
+				   mix( dot( random3(i + vec3(0.0,1.0,0.0) ), f - vec3(0.0,1.0,0.0) ),
+						dot( random3(i + vec3(1.0,1.0,0.0) ), f - vec3(1.0,1.0,0.0) ), u.x), u.y),
+			   mix(mix( dot( random3(i + vec3(0.0,0.0,1.0) ), f - vec3(0.0,0.0,1.0) ),
+						dot( random3(i + vec3(1.0,0.0,1.0) ), f - vec3(1.0,0.0,1.0) ), u.x),
+				   mix( dot( random3(i + vec3(0.0,1.0,1.0) ), f - vec3(0.0,1.0,1.0) ),
+						dot( random3(i + vec3(1.0,1.0,1.0) ), f - vec3(1.0,1.0,1.0) ), u.x), u.y), u.z);
+}
+vec3 noise3(vec3 v3) {
+	return vec3(noise(v3),noise(v3 + sceneExtent * 12.414),noise(v3 + sceneExtent * 532.1365));
+}
+
+vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receiverDist, int dim){
+	vec3 ret = vec3(0);
+	float cosi = abs(normLightVec[dim]);
+	int j = (dim+1)%3;
+	int k = (dim+2)%3;
+	float area = (lights[lightIdx].bound[1][j] - lights[lightIdx].bound[0][j])*(lights[lightIdx].bound[1][k] - lights[lightIdx].bound[0][k]);
+	return lights[lightIdx].emission * area * cosi / (receiverDist * receiverDist);
+}
+
+/*
+ *	For SSDO
+ */
+vec3 SSDO(vec3 rand3D){
+	//calculate sample point
+	float sinPhi = sin(2*PI*rand3D.x);
+	float cosPhi = cos(2*PI*rand3D.x);
+	float sinTheta = sqrt(rand3D.y);
+	float cosTheta = sqrt(1-rand3D.y);
+	vec3 sampleVec = cosTheta * aNormal.xyz + sinTheta * (cosPhi * t + sinPhi * b);
+	vec3 samplePoint = aWorldPos.xyz + sampleVec * SsdoSampleRadius * rand3D.z;
+	
+	//calculate occlusion
+	vec4 sampleScreenCoord = world2Screen * vec4(samplePoint,1);
+	sampleScreenCoord.xyz /= sampleScreenCoord.w;
+	sampleScreenCoord.xyz = sampleScreenCoord.xyz/2 + 0.5;
+	vec2 sampleTexCoord = sampleScreenCoord.xy;
+	float sampleDepth = sampleScreenCoord.z;
+	if(sampleTexCoord.x < 0 || sampleTexCoord.y < 0 || sampleTexCoord.x > 1 || sampleTexCoord.y > 1)
+		return vec3(0,0,0);
+	if(texture(depth, sampleTexCoord).r < sampleDepth){
+		//occluded
+		vec3 sampleNormal = texture(normal, sampleTexCoord).xyz;
+		vec3 sampleWorldPos = texture(worldPos, sampleTexCoord).xyz;
+		vec3 samplePointVec = aWorldPos - samplePoint;
+		float samplePointDist = length(samplePointVec);
+		//normal plane is above shading point, full occluded.
+		if(dot(sampleNormal,samplePointVec)<1e-3){
+			if(samplePointDist>SsdoSampleRadius)
+				return vec3(0,0,0);
+			else
+				return totalAmbient;
+		}
+		//indirect light
+		//#TODO 未遮蔽项用之前渲染的FragColor作为Li，是否要加距离衰减还待考量
+		float distAtt = samplePointDist / attRefDist;
+		distAtt = 1/(1+distAtt*distAtt);
+		return texture(fragColor, sampleTexCoord).xyz * dot(sampleNormal, normalize(samplePointVec)) * distAtt;
+	}
+	else{
+		//not occluded, full ambient light
+		return totalAmbient;
+	}
+}
+
+void main(){
+	//prepare global value
+	//mtr values
+	aWorldPos = texture(worldPos, texCoord).xyz;
+	aNormal = texture(normal, texCoord).xyz;
+	aAlbedo = texture(albedo, texCoord).xyz;
+	aFragColor = texture(fragColor, texCoord);
+	aDepth = texture(depth, texCoord).r;
+	FragColor += aFragColor;
+	SsdoSampleRadius = SsdoSampleRadiusFactor * sceneExtent;
+
+	//calculate tagnent space vector
+	int pivotAxis;
+	if(abs(aNormal.x) < abs(aNormal.y) && abs(aNormal.x) < abs(aNormal.z))
+		pivotAxis = 0;
+	else if(abs(aNormal.y) < abs(aNormal.z))
+		pivotAxis = 1;
+	else
+		pivotAxis = 2;
+	vec3 helpvec = vec3(0);
+	helpvec[pivotAxis] = 1;
+	t = cross(helpvec, aNormal.xyz);
+	b = cross(aNormal.xyz, t);
+	t = normalize(t);
+	b = normalize(b);
+	
+	//calculate ambient occlusion
+	totalAmbient=vec3(0);
+	for(int i=0;i<lightCount;i++){
+		totalAmbient += lights[i].ambient;
+	}
+	vec3 ssdoValue;
+	vec3 ssdoSampleCnts = vec3(SsdoUnitSphereSampleCnt,SsdoUnitSphereSampleCnt,SsdoRadiusSampleCnt);
+	int cnt = 0;
+	for(int i=0;i<SsdoUnitSphereSampleCnt;i++){
+		for(int j=0;j<SsdoUnitSphereSampleCnt;j++){
+			for(int k=0;k<SsdoRadiusSampleCnt;k++){
+				vec3 rand3D = vec3(i,j,k);
+				//jitter sampler
+				rand3D += random3(aWorldPos + cnt*vec3(113.3212,213.432,22.123)*sceneExtent) / 2 + 0.5;
+				rand3D /= ssdoSampleCnts;
+				ssdoValue+=SSDO(rand3D);
+				cnt++;
+			}
+		}
+	}
+	FragColor += (vec4(aAlbedo*ssdoValue / SsdoTotalSampleCnt,1.0)); 
+}

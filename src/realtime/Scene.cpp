@@ -62,10 +62,11 @@ void Scene::initializeGL()
 
 	GLFUNC->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	mtrPainter = std::make_shared<DeferedMtrPaintVisitor>();
-	deferedPainter = std::make_shared<DeferedPaintVisitor>();
+	mtrPainter = std::make_shared<DeferredMtrPaintVisitor>();
+	deferredDirLightPainter = std::make_shared<DeferredDirectLightPaintVisitor>();
+	deferredSsdoPaintVisitor = std::make_shared<DeferredSsdoPaintVisitor>();
 	forwardPainter = std::make_shared<ForwardPaintVisitor>();
-	gammaCorrector = std::make_shared<GammaPaintVisitor>();
+	toneMapPainter = std::make_shared<ToneMapPaintVisitor>();
 
 	//相机初始化
 	camera->initialize(width(), height());
@@ -78,6 +79,7 @@ void Scene::initializeGL()
 	billboard = PTriMesh::createBillBoard();
 	billboard->initAll();
 	fbo1 = std::make_shared<GLColorFrameBufferObject>();
+	fbo2 = std::make_shared<GLColorFrameBufferObject>();
 	msfbo = std::make_shared<GLMultiSampleFrameBufferObject>(sampleRate);
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
 	doPrimAdd();
@@ -94,6 +96,7 @@ void Scene::resizeGL(int w, int h)
 	GLFUNC->glViewport(0, 0, w, h);
 	camera->initialize(w, h);
 	fbo1->resize(h, w);
+	fbo2->resize(h, w);
 	msfbo->resize(h, w);
 	mtrfbo->resize(h, w);
 }
@@ -148,13 +151,18 @@ void Scene::paintGL()
 		prim.second->paint(&info, mtrPainter.get());
 	}
 
-	//Defered Shading
+	//Deferred Shading
 	info.mtrTexIdx = mtrfbo->transferedTextureId();
-	//#TEST
-	debugOpenGL();
+	//direct light
 	fbo1->bind();
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	billboard->paint(&info, deferedPainter.get());
+	billboard->paint(&info, deferredDirLightPainter.get());
+
+	info.mtrTexIdx[0] = fbo1->textureId();
+	fbo2->bind();
+	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	billboard->paint(&info, deferredSsdoPaintVisitor.get());
+	
 
 	//Forward Shading
 	//#TODO0
@@ -172,8 +180,8 @@ void Scene::paintGL()
 	//Gamma 校正
 	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
 	GLFUNC->glActiveTexture(GL_TEXTURE0);
-	GLFUNC->glBindTexture(GL_TEXTURE_2D, fbo1->textureId());
-	billboard->paint(&info, gammaCorrector.get());
+	GLFUNC->glBindTexture(GL_TEXTURE_2D, fbo2->textureId());
+	billboard->paint(&info, toneMapPainter.get());
 }
 
 void Scene::mouseMoveEvent(QMouseEvent *ev)

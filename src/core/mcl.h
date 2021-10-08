@@ -64,7 +64,7 @@ namespace mcl {
 	class Light;
 	class PointLight;
 	class PaintVisitor;
-	class GammaPaintVisitor;
+	class ToneMapPaintVisitor;
 	class PaintInfomation;
 	class Camera;
 	class PPoint;

@@ -201,7 +201,7 @@ namespace mcl{
 		return 0;
 	}
 
-	int DeferedMtrPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
+	int DeferredMtrPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	{
 		//#TODO0 线框的渲染可以放在延迟渲染之后的正向渲染中
 		//do before paint

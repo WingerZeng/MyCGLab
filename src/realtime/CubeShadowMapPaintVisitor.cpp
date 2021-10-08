@@ -34,9 +34,4 @@ namespace mcl{
 		info->modelMat = tempTrans_;
 	}
 
-	int CubeShadowMapPaintVisitor::initTris(PTriMesh* tri)
-	{
-		return 0;
-	}
-
 }

@@ -21,10 +21,10 @@ namespace mcl {
 
 	};
 
-	class DeferedMtrPaintVisitor : public PaintVisitor
+	class DeferredMtrPaintVisitor : public PaintVisitor
 	{
 	public:
-		DeferedMtrPaintVisitor() {};
+		DeferredMtrPaintVisitor() {};
 
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
