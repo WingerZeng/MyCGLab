@@ -11,10 +11,6 @@
 #include <QFileInfo>
 #include <QDir>
 
-//#TEST
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
 #include "glog/logging.h"
 using namespace mcl;
 

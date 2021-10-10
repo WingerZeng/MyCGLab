@@ -9,8 +9,6 @@ namespace mcl {
 	{
 	public:
 		static GLFunctions* getSingletonPtr();
-		void activeUniformTexture(GLuint target, GLuint texid, std::string name, QOpenGLShaderProgram* shader);
-		void resetActiveTexture();
 	protected:
 		GLFunctions() {};
 	private:

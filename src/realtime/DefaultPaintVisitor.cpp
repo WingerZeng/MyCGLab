@@ -31,7 +31,6 @@ namespace mcl{
 
 			info->hasNormal = tri->hasNormal();
 
-			GLFUNC->resetActiveTexture();
 			info->setUniformValue(shader, DEFFER_PREPARE);
 			tri->getMaterial()->prepareGL(shader);
 
@@ -120,14 +119,12 @@ namespace mcl{
 			{
 				shader = LightPerFragShader::ptr();
 				shader->bind();
-				GLFUNC->resetActiveTexture();
 				info->setUniformValue(shader, DEFFER_PREPARE);
 				shader->setUniformValue("ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
 			else {
 				shader = CommonShader::ptr();
 				shader->bind();
-				GLFUNC->resetActiveTexture();
 				info->setUniformValue(shader, DEFFER_PREPARE);
 				shader->setUniformValue("ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
@@ -145,7 +142,6 @@ namespace mcl{
 		}
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {  //Ñ¡ÖĞÊ±Òş²Ø
 			LineShader::ptr()->bind();
-			GLFUNC->resetActiveTexture();
 			info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
 			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
@@ -183,7 +179,6 @@ namespace mcl{
 		//do paint
 		lines->getVAO().bind();
 		LineShader::ptr()->bind();
-		GLFUNC->resetActiveTexture();
 		info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
 		LineShader::ptr()->setUniformValue("ourColor", QVector4D(lines->color().x(), lines->color().y(), lines->color().z(), 1.0f));
 		if (lines->isLoop())
@@ -222,7 +217,6 @@ namespace mcl{
 
 			info->hasNormal = tri->hasNormal();
 
-			GLFUNC->resetActiveTexture();
 			info->setUniformValue(shader, DEFFER_PREPARE);
 			tri->getMaterial()->prepareGL(shader);
 

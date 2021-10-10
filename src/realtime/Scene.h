@@ -6,6 +6,7 @@
 #include <QVector3D>
 #include "axis.h"
 #include "camera.h"
+#include "PaintInformation.h"
 
 class QOpenGLDebugLogger;
 
@@ -96,6 +97,10 @@ namespace mcl {
 
 		int rbo;
 
+		static const int MaxBloomMipLevel = 3;
+		static const int bloomMipStopSize = 8;
+		int bloomMipLevel = MaxBloomMipLevel;
+
 		std::shared_ptr<PaintVisitor> mtrPainter;
 		std::shared_ptr<PaintVisitor> deferredDirLightPainter;
 		std::shared_ptr<PaintVisitor> deferredSsdoPaintVisitor;
@@ -103,13 +108,17 @@ namespace mcl {
 		std::shared_ptr<ToneMapPaintVisitor> toneMapPainter;
 		std::shared_ptr<GLColorFrameBufferObject> fbo1;
 		std::shared_ptr<GLColorFrameBufferObject> fbo2;
+		std::shared_ptr<GLColorFrameBufferObject> bloomMipFbos[MaxBloomMipLevel];
 		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
 		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;
 		std::shared_ptr<PTriMesh> billboard;
+		
 
 		Bound3f sceneBound;
 
 		const int sampleRate = 8;
+
+		PaintInfomation info;
 	};
 
 	template<class T>

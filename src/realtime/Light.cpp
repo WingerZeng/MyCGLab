@@ -3,6 +3,7 @@
 #include <QOpenGLShaderProgram>
 #include "GLFrameBufferObject.h"
 #include "GLFunctions.h"
+#include "GLTexture.h"
 namespace mcl {
 
 	Light::Light(const Color3f& e, const std::shared_ptr<Primitive>& prim)
@@ -124,7 +125,7 @@ namespace mcl {
 		shader->setUniformValue((lightname + ".nearPlane").c_str(), NearPlane);
 		shader->setUniformValue((lightname + ".shadowOffset").c_str(), shadowOffset);
 		shader->setUniformValue((lightname + ".mapSize").c_str(), smWidth);
-		GLFUNC->activeUniformTexture(GL_TEXTURE_CUBE_MAP, fbo->textureId(), (lightname + ".shadowMap"), shader);
+		fbo->texture()->bindToUniform(lightname + ".shadowMap", shader);
 	}
 
 	std::shared_ptr<mcl::GLShadowMapFrameBufferObject> PointLight::getFbo()

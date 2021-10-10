@@ -200,7 +200,6 @@ namespace mcl{
 
 	void PTriMesh::generateNormal()
 	{
-		//#TODO0
 	}
 
 	int PTriMesh::getTriNumer()

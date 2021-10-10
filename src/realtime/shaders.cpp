@@ -13,6 +13,7 @@ namespace mcl{
 		CubeShaodwMapShader::clear();
 		DeferredDirectLightShader::clear();
 		DeferredSsdoShader::clear();
+		BloomFilterShader::clear();
 		if (CommonShader::ptr() &&
 			LightShader::ptr() &&
 			LineShader::ptr() &&
@@ -21,7 +22,8 @@ namespace mcl{
 			ToneMapShader::ptr() &&
 			CubeShaodwMapShader::ptr() &&
 			DeferredDirectLightShader::ptr() &&
-			DeferredSsdoShader::ptr()) {
+			DeferredSsdoShader::ptr() &&
+			BloomFilterShader::ptr()) {
 			Singleton<GlobalInfo>::getSingleton()->shaderReady = true;
 			return 0;
 		}

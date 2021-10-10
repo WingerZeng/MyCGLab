@@ -1,0 +1,96 @@
+#version 430 core
+out vec4 FragColor;
+in vec2 texCoord;
+uniform sampler2D prevTex; //滤波的输入图像
+uniform sampler2D curTex;  //目标Mipmap等级的图像（升采样时使用）
+uniform bool isDownSample;
+// 为true则对于降采样采用"Karis Average"，目前只针对Mip0->Mip1开启
+uniform bool useKarisAverage=false; 
+// 目标图像的长宽
+uniform vec2 size;
+
+float lum(vec3 c){
+	return 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
+}
+
+/* 降采样算法 */
+const int DownSampleCnt = 13;
+const vec2 DownSampleQryOffset[DownSampleCnt] = {
+	{0.0,0.0},
+	{-1.0,-1.0},{1.0,-1.0},{1.0,1.0},{-1.0,1.0},
+	{-2.0,-2.0},{0.0,-2.0},{2.0,-2.0},{2.0,0.0},{2.0,2.0},{0.0,2.0},{-2.0,2.0},{-2.0,0.0}
+};
+const float DownSampleQryWeights[DownSampleCnt] = {
+	0.125, 0.125, 0.125, 0.125, 0.125, 0.03125, 0.0625,
+	0.03125, 0.0625, 0.03125, 0.0625, 0.03125, 0.0625
+};
+const int DownSampleGroupCnt = 5;
+const int SamplePerGroup = 4;
+const int DownSampleGroups[DownSampleGroupCnt][SamplePerGroup] = {
+	{1,2,3,4},{5,6,0,12},{6,7,8,0},{0,8,9,10},{12,0,10,11}
+};
+const float DownSampleGroupWeights[DownSampleGroupCnt] = {
+	0.5,0.125,0.125,0.125,0.125
+};
+vec3 DownSample(){
+	// 13次纹理查询
+	vec3 qrys[DownSampleCnt]; 
+	vec2 unitStepInPevTex = 0.5/size; 
+	for(int i=0;i<DownSampleCnt;i++){
+		qrys[i] = texture(prevTex, texCoord + DownSampleQryOffset[i]*unitStepInPevTex).xyz;
+	}
+	vec3 ret = vec3(0);
+	if(false){
+		// 将每个查询值计算Karis Average权重
+		float qrysKarisWeight[DownSampleCnt]; 
+		for(int i=0;i<DownSampleCnt;i++){
+			qrysKarisWeight[i] = 1.0 / (1.0 + lum(qrys[i]));
+		}
+		for(int i=0;i<DownSampleGroupCnt;i++){
+			//权重求和以归一化
+			float sumedKarisWeight=0; 
+			for(int j=0;j<SamplePerGroup;j++){
+				sumedKarisWeight += qrysKarisWeight[DownSampleGroups[i][j]];
+			}
+			//各组加权平均和
+			for(int j=0;j<SamplePerGroup;j++){
+				ret += DownSampleGroupWeights[i] * qrysKarisWeight[DownSampleGroups[i][j]] / sumedKarisWeight * qrys[DownSampleGroups[i][j]];
+			}
+		}
+	}
+	else{
+		for(int i=0;i<DownSampleCnt;i++){
+			ret += qrys[i] * DownSampleQryWeights[i];
+		}
+	}
+	return ret;
+}
+
+/* 升采样算法 */
+const int UpSampleCnt = 9;
+const vec2 UpSampleQryOffset[UpSampleCnt] = {
+	{0,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}
+};
+const float UpSampleQryWeights[UpSampleCnt] = {
+	0.25,0.0625,0.125,0.0625,0.125,0.0625,0.125,0.0625,0.125
+};
+vec3 UpSample(){
+	//#TEST #TODO 两个等级之间的混合因子？
+	vec3 ret = texture(curTex, texCoord).xyz / 2;
+	vec2 unitStepInOriTex = 2/size; 
+	for(int i=0;i<UpSampleCnt;i++){
+		//#TEST #TODO 两个等级之间的混合因子？
+		ret += texture(prevTex, texCoord + UpSampleQryOffset[i]*unitStepInOriTex).xyz * UpSampleQryWeights[i] / 2;
+	}
+	return ret;
+}
+
+void main(){
+	if(isDownSample){
+		FragColor = vec4(DownSample(),1);
+	}
+	else{
+		FragColor = vec4(UpSample(),1);
+	}
+	return;
+}

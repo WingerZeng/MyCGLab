@@ -37,6 +37,9 @@ namespace mcl {
 		int activeTextrueCnt = 0;
 		void setUniformValue(QOpenGLShaderProgram* shader, PaintStage stage);
 
-		std::vector<GLuint> mtrTexIdx;
+		std::vector<std::shared_ptr<GLAbstractTexture>> mtrTex;
+		std::shared_ptr<GLAbstractTexture> finalHdrTexture;
+		std::vector<std::shared_ptr<GLAbstractTexture>> bloomMipTex;
+		int bloomSampleState; //if (0,), down sample from Mip i-1 to Mip i. if (,0), up sample from Mip -i to Mip -i-1
 	};
 }

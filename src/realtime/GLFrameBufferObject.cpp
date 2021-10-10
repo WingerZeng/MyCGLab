@@ -1,17 +1,18 @@
 #include "GLFrameBufferObject.h"
 #include "GLFunctions.h"
 #include "Scene.h"
+#include "GLTexture.h"
 namespace mcl {
 	
 	GLColorFrameBufferObject::GLColorFrameBufferObject()
 	{
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-		GLFUNC->glGenTextures(1, &tbo); 
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, tbo);
-		GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
+		tex = std::make_shared<GLTexture2D>(GL_RGB16F, GL_RGB, GL_FLOAT);
+		tex->bind();
+		tex->setFilter(GL_LINEAR, GL_LINEAR);
+		tex->setWrap(GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
+		tex->release();
 
 		GLFUNC->glGenRenderbuffers(1, &rbo);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, rbo);
@@ -22,8 +23,6 @@ namespace mcl {
 
 	GLColorFrameBufferObject::~GLColorFrameBufferObject()
 	{	
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
-		GLFUNC->glDeleteTextures(1, &tbo);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		GLFUNC->glDeleteRenderbuffers(1, &rbo);
 	}
@@ -39,16 +38,20 @@ namespace mcl {
 	{
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, tbo);
-		GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+		tex->resize(width, height);
+		tex->bindToFbo(fbo, GL_COLOR_ATTACHMENT0);
+		tex->release();
 
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 		GLFUNC->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8, width, height);
 
-		GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tbo, 0);
 		GLFUNC->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	}
+
+	std::shared_ptr<mcl::GLAbstractTexture> GLColorFrameBufferObject::texture(int idx /*= 0*/)
+	{
+		return tex;
 	}
 
 	GLMultiSampleFrameBufferObject::GLMultiSampleFrameBufferObject(int nsample)
@@ -56,11 +59,7 @@ namespace mcl {
 	{
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-		GLFUNC->glGenTextures(1, &mstbo);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mstbo);
-		//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		//glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+		mstex = std::make_shared<GLTextureMultiSample>(GL_RGB16F, nsample);
 
 		GLFUNC->glGenRenderbuffers(1, &msrbo);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, msrbo);
@@ -71,8 +70,6 @@ namespace mcl {
 
 	GLMultiSampleFrameBufferObject::~GLMultiSampleFrameBufferObject()
 	{
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-		GLFUNC->glDeleteTextures(1, &mstbo);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		GLFUNC->glDeleteRenderbuffers(1, &msrbo);
 	}
@@ -88,19 +85,20 @@ namespace mcl {
 	{
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, mstbo);
-		GLFUNC->glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nsample, GL_RGB16F, width, height, GL_TRUE);
+
+		mstex->resize(width, height);
+		mstex->release();
+		mstex->bindToFbo(fbo, GL_COLOR_ATTACHMENT0);
+
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, msrbo);
 		GLFUNC->glRenderbufferStorageMultisample(GL_RENDERBUFFER, nsample, GL_DEPTH32F_STENCIL8, width, height);
-		GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, mstbo, 0);
 		GLFUNC->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, msrbo);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 		GLFUNC->glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 
-	int GLMultiSampleFrameBufferObject::textureId(int idx/*=0*/)
-{
-		return mstbo;
+	std::shared_ptr<mcl::GLAbstractTexture> GLMultiSampleFrameBufferObject::texture(int idx /*= 0*/)
+	{
+		return mstex;
 	}
 
 	void GLMultiSampleFrameBufferObject::copyToFbo(GLuint afbo)
@@ -135,49 +133,47 @@ namespace mcl {
 	{
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-		GLFUNC->glGenTextures(1, &cubetbo);
-		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, cubetbo); 
-		GLFUNC->glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		GLFUNC->glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		GLFUNC->glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		GLFUNC->glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		GLFUNC->glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		tex = std::make_shared<GLTextureCubeMap>(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT);
+		tex->setFilter(GL_LINEAR, GL_LINEAR);
+		tex->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 
-		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+		//colortex = std::make_shared<GLTextureCubeMap>(GL_RGBA8, GL_RGB, GL_UNSIGNED_BYTE);
+
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	GLShadowMapFrameBufferObject::~GLShadowMapFrameBufferObject()
 	{
-		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-		GLFUNC->glDeleteTextures(1, &cubetbo);
 	}
 
 	void GLShadowMapFrameBufferObject::bind()
 	{
+		GLFUNC->glDrawBuffer(GL_NONE);
+		GLFUNC->glReadBuffer(GL_NONE);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		GLFUNC->glDrawBuffer(GL_NONE);
 		GLFUNC->glReadBuffer(GL_NONE);
+		//#TEST
+		if (GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			LOG(FATAL) << GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	}
 
 	void GLShadowMapFrameBufferObject::resize(int height, int width)
 	{
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, cubetbo);
-		for (GLuint i = 0; i < 6; i++) {
-			GLFUNC->glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-		}
-		GLFUNC->glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, cubetbo, 0);
-		GLFUNC->glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+		
+		tex->resize(width, height);
+		tex->bindToFbo(fbo, GL_DEPTH_ATTACHMENT);
+		//colortex->resize(width, height);
+		//colortex->bindToFbo(fbo, GL_COLOR_ATTACHMENT0);
 
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	int GLShadowMapFrameBufferObject::textureId(int idx/*=0*/)
-{
-		return cubetbo;
+	std::shared_ptr<mcl::GLAbstractTexture> GLShadowMapFrameBufferObject::texture(int idx /*= 0*/)
+	{
+		return tex;
 	}
 
 	GLMtrFrameBufferObject::GLMtrFrameBufferObject(int nsample)
@@ -185,16 +181,12 @@ namespace mcl {
 	{
 		GLFUNC->glGenFramebuffers(1, &interFbo);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		
-		GLFUNC->glGenTextures(nTargetType, targetTex);
-		GLFUNC->glGenTextures(nTargetType, outputTex);
+
 		for (int i = 0; i < nTargetType; i++) {
-			GLFUNC->glBindTexture(GL_TEXTURE_2D, outputTex[i]);
-			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
+			targetTex.emplace_back(std::make_shared<GLTextureMultiSample>(targetFromats[i], nsample));
+			outputTex.emplace_back(std::make_shared<GLTexture2D>(targetFromats[i], targetBaseFromats[i], targetUnitFromats[i]));
+			outputTex[i]->setFilter(GL_LINEAR, GL_LINEAR);
+			outputTex[i]->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 		}
 
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -202,11 +194,7 @@ namespace mcl {
 
 	GLMtrFrameBufferObject::~GLMtrFrameBufferObject()
 	{
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-		GLFUNC->glDeleteTextures(nTargetType, targetTex);
 		GLFUNC->glDeleteFramebuffers(1, &interFbo);
-		GLFUNC->glDeleteTextures(nTargetType, outputTex);
 	}
 
 	void GLMtrFrameBufferObject::bind()
@@ -226,34 +214,29 @@ namespace mcl {
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		for (int i = 0; i < nTargetType-1; i++) {
-			GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, targetTex[i]);
-			GLFUNC->glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nsample, targetFromats[i], width, height, GL_TRUE);
-			GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D_MULTISAMPLE, targetTex[i], 0);
+			targetTex[i]->resize(width, height);
+			targetTex[i]->bindToFbo(fbo, GL_COLOR_ATTACHMENT0 + i);
 		}
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, targetTex[DEPTH]);
-		GLFUNC->glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nsample, targetFromats[DEPTH], width, height, GL_TRUE);
-		GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, targetTex[DEPTH], 0);
+		targetTex[DEPTH]->resize(width, height);
+		targetTex[DEPTH]->bindToFbo(fbo, GL_DEPTH_ATTACHMENT);
 
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, interFbo);
 		for (int i = 0; i < nTargetType - 1; i++) {
-			GLFUNC->glBindTexture(GL_TEXTURE_2D, outputTex[i]);
-			GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, targetFromats[i], width, height, 0, targetBaseFromats[i], targetUnitFromats[i], NULL);
-			GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, outputTex[i], 0);
+			outputTex[i]->resize(width, height);
+			outputTex[i]->bindToFbo(interFbo, GL_COLOR_ATTACHMENT0 + i);
 		}
-		GLFUNC->glBindTexture(GL_TEXTURE_2D, outputTex[DEPTH]);
-		GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, targetFromats[DEPTH], width, height, 0, targetBaseFromats[DEPTH], targetUnitFromats[DEPTH], NULL);
-		GLFUNC->glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, outputTex[DEPTH], 0);
+		outputTex[DEPTH]->resize(width, height);
+		outputTex[DEPTH]->bindToFbo(interFbo, GL_DEPTH_ATTACHMENT);
 
-		GLFUNC->glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	int GLMtrFrameBufferObject::textureId(int idx/*=0*/)
-{
+	std::shared_ptr<mcl::GLAbstractTexture> GLMtrFrameBufferObject::texture(int idx /*= 0*/)
+	{
 		return targetTex[idx];
 	}
 
-	std::vector<GLuint> GLMtrFrameBufferObject::transferedTextureId()
+	std::vector<std::shared_ptr<GLAbstractTexture>> GLMtrFrameBufferObject::transferedTextureId()
 	{
 		GLFUNC->glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 		GLFUNC->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, interFbo);
@@ -267,7 +250,9 @@ namespace mcl {
 		GLFUNC->glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		GLFUNC->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 		GLFUNC->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		return std::vector<GLuint>(outputTex, outputTex + nTargetType);
+
+		std::vector<std::shared_ptr<GLAbstractTexture>> ret(outputTex.begin(), outputTex.end());
+		return ret;
 	}
 
 	std::array<GLuint, GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetFromats = {

@@ -49,7 +49,7 @@ public:
 	virtual void paint(PaintInfomation* info, PaintVisitor* visitor);
 
 	/* 界面信息接口 */
-	virtual QString name() { return ""; }; //#TODO Primitive名称功能
+	virtual QString name() { return ""; }; //#TODO2 Primitive名称功能
 	bool selected() { return selected_; }
 	virtual void setSelected(bool selected) { selected_ = selected; }
 

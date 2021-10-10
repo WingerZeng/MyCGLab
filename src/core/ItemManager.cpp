@@ -62,7 +62,7 @@ namespace mcl{
 
 		clearSelected();
 
-		//#TODO 删除子节点
+		//#TODO2 删除子节点
 	}
 
 	int ItemManager::clearSelected()

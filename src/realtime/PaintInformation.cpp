@@ -2,6 +2,7 @@
 #include <QOpenGLShaderProgram>
 #include "light.h"
 #include "GLFunctions.h"
+#include "GLTexture.h"
 void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintStage stage)
 {
 	switch (stage)
@@ -21,11 +22,11 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 	case mcl::DEFFER_LIGHTING:
 		shader->setUniformValue("world2Screen", projMat * viewMat);
 		shader->setUniformValue("lightCount", GLint(lights.size()));
-		GLFUNC->activeUniformTexture(GL_TEXTURE_2D, mtrTexIdx[0], "fragColor", shader);
-		GLFUNC->activeUniformTexture(GL_TEXTURE_2D, mtrTexIdx[1], "albedo", shader);
-		GLFUNC->activeUniformTexture(GL_TEXTURE_2D, mtrTexIdx[2], "worldPos", shader);
-		GLFUNC->activeUniformTexture(GL_TEXTURE_2D, mtrTexIdx[3], "normal", shader);
-		GLFUNC->activeUniformTexture(GL_TEXTURE_2D, mtrTexIdx[4], "depth", shader);
+		mtrTex[0]->bindToUniform("fragColor", shader);
+		mtrTex[1]->bindToUniform("albedo", shader);
+		mtrTex[2]->bindToUniform("worldPos", shader);
+		mtrTex[3]->bindToUniform("normal", shader);
+		mtrTex[4]->bindToUniform("depth", shader);
 		for (int j = 0; j < lights.size(); j++) {
 			lights[j]->bind(shader, j, this->activeTextrueCnt);
 		}

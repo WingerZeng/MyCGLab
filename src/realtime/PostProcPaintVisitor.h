@@ -26,5 +26,11 @@ namespace mcl {
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
+
+	class BloomFilterPaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
 }
 

@@ -144,7 +144,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				vec3 pBlocker = lights[lightIdx].pos + normalize(Vsa) * dBlocker;
 				//project blocker to light
 				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) *  lightVec[dim] / (aWorldPos[dim] - pBlocker[dim]);
-				if(pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
+				if(abs(pBlocker[dim]-lights[lightIdx].pos[dim]) < abs(aWorldPos[dim]-lights[lightIdx].pos[dim]) - lights[lightIdx].shadowOffset
+				&& pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
 					//fade with distance
@@ -157,6 +158,7 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	}
 
 	if(blockerCnt==0) return 1;
+	if(avgBlockerDist <= 0) return 0;
 	avgBlockerDist /= blockerCnt;
 	avgBlockerDist = sqrt(avgBlockerDist);
 
@@ -191,7 +193,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				vec3 pBlocker = lights[lightIdx].pos + normalize(Vsa) * dBlocker;
 				//project blocker to light
 				vec3 pProjectInLight = aWorldPos + (pBlocker - aWorldPos) * (lightVec[dim]) / (aWorldPos[dim] - pBlocker[dim]);
-				if(pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
+				if(abs(pBlocker[dim]-lights[lightIdx].pos[dim]) < abs(aWorldPos[dim]-lights[lightIdx].pos[dim]) - lights[lightIdx].shadowOffset
+				&& pProjectInLight[d1] >= lights[lightIdx].bound[0][d1] && pProjectInLight[d1] <= lights[lightIdx].bound[1][d1]
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
 					//fade with distance
@@ -205,6 +208,7 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 			}
 		}
 	}
+	if(discardCnt == PcfSampleCnt * PcfSampleCnt) return 1;
 	ret /= (PcfSampleCnt * PcfSampleCnt - discardCnt);
 	//fade from full lit to penumbra
 	//return ret;

@@ -12,7 +12,7 @@ namespace mcl {
 
 		virtual void resize(int height, int width);
 
-		virtual int textureId(int idx=0) = 0;
+		virtual std::shared_ptr<GLAbstractTexture> texture(int idx=0) = 0;
 
 		GLuint fboId() { return fbo; };
 
@@ -31,11 +31,11 @@ namespace mcl {
 
 		void resize(int height, int width) override;
 
-		int textureId(int idx=0) override { return tbo; }
+		std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
 
 	private:
 		GLuint rbo;
-		GLuint tbo;
+		std::shared_ptr<GLTexture2D> tex;
 	};
 
 	class GLMultiSampleFrameBufferObject :public GLFrameBufferObject
@@ -48,14 +48,14 @@ namespace mcl {
 
 		void resize(int height, int width) override;
 
-		int textureId(int idx=0) override;
+		std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
 
 		void copyToFbo(GLuint fbo);
 
 	private:
 		int nsample;
 		GLuint msrbo;
-		GLuint mstbo;
+		std::shared_ptr<GLTextureMultiSample> mstex;
 	};
 
 	class GLShadowMapFrameBufferObject : public GLFrameBufferObject
@@ -68,10 +68,12 @@ namespace mcl {
 
 		void resize(int height, int width) override;
 
-		int textureId(int idx=0) override;
+		std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
 
 	private:
-		GLuint cubetbo;
+		std::shared_ptr<GLTextureCubeMap> tex;
+		//#TEST
+		std::shared_ptr<GLTextureCubeMap> colortex;
 	};
 
 	class GLMtrFrameBufferObject : public GLFrameBufferObject
@@ -85,9 +87,9 @@ namespace mcl {
 
 		virtual void resize(int height, int width) override;
 
-		virtual int textureId(int idx=0) override;
+		std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
 
-		std::vector<GLuint> transferedTextureId();
+		std::vector<std::shared_ptr<GLAbstractTexture>> transferedTextureId();
 
 		enum TargetType
 		{
@@ -105,8 +107,8 @@ namespace mcl {
 
 	private:
 		int nsample;
-		GLuint targetTex[nTargetType];
-		GLuint outputTex[nTargetType];
+		std::vector<std::shared_ptr<GLTextureMultiSample>> targetTex;
+		std::vector<std::shared_ptr<GLTexture2D>> outputTex;
 		GLuint interFbo;
 	};
 }

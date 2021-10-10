@@ -2,7 +2,6 @@
 #include <QOpenGLDebugLogger>
 #include "Primitive.h"
 #include "primitives/PPolygon.h"
-#include "PaintInformation.h"
 #include "Light.h"
 #include "PerspectiveCamera.h"
 
@@ -27,6 +26,7 @@
 #include "GLFunctions.h"
 #include "GlobalInfo.h"
 #include "shaders.h"
+#include "GLTexture.h"
 
 namespace mcl {
 Scene::Scene(QWidget* parent)
@@ -82,11 +82,22 @@ void Scene::initializeGL()
 	fbo2 = std::make_shared<GLColorFrameBufferObject>();
 	msfbo = std::make_shared<GLMultiSampleFrameBufferObject>(sampleRate);
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
+	for (int i = 0; i < MaxBloomMipLevel; i++) {
+		bloomMipFbos[i] = std::make_shared<GLColorFrameBufferObject>();
+	}
 	doPrimAdd();
 
 	QTimer *timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(repaint()));
 	timer->start(10);
+
+	//init paint info
+	info.lineWidth = 1.5f;
+	info.pointSize = 8.0f;
+	info.finalHdrTexture = fbo2->texture();
+	for (int i=0;i<MaxBloomMipLevel;i++){
+		info.bloomMipTex.push_back(bloomMipFbos[i]->texture());
+	}
 
 	initAllShaders();
 }
@@ -99,13 +110,32 @@ void Scene::resizeGL(int w, int h)
 	fbo2->resize(h, w);
 	msfbo->resize(h, w);
 	mtrfbo->resize(h, w);
+
+	int mipW = w, mipH = h;
+	int i = 0;
+	for (i = 0; i < MaxBloomMipLevel; i++) {
+		mipW = (mipW + 1) / 2;
+		mipH = (mipH + 1) / 2;
+		if (mipW < bloomMipStopSize || mipH < bloomMipStopSize) {
+			break;
+		}
+		bloomMipFbos[i]->resize(mipH, mipW);
+	}
+	bloomMipLevel = i;
+
+	info.width = w;
+	info.height = h;
 }
 
 void Scene::paintGL()
 {
+
 	if (!Singleton<GlobalInfo>::getSingleton()->shaderReady)
 		return;
 	doPrimAdd();
+
+	//#TEST
+	debugOpenGL();
 
 	//Prepare shadow map
 	if (bNeedInitLight) {
@@ -128,41 +158,51 @@ void Scene::paintGL()
 		GLFUNC->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 		GLFUNC->glViewport(0, 0, this->width(), this->height());
 		bNeedInitLight = false;
+		info.lights = lights_;
 	}
+
 	mtrfbo->bind();
 	GLFUNC->glEnable(GL_DEPTH_TEST);
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	debugOpenGL();
-	PaintInfomation info;
 	info.projMat = camera->getProjMatrix();
 	info.viewMat = camera->getViewMatrix();
-	info.lights = lights_;
 	
 	if(wfmode_) info.fillmode = FILL_WIREFRAME;
 	else info.fillmode = FILL;
-
-	info.lineWidth = 1.5f;
-	info.pointSize = 8.0f;
-	info.width = width();
-	info.height = height();
 
 	for (auto& prim : prims_) {
 		prim.second->paint(&info, mtrPainter.get());
 	}
 
 	//Deferred Shading
-	info.mtrTexIdx = mtrfbo->transferedTextureId();
+	info.mtrTex = mtrfbo->transferedTextureId();
 	//direct light
 	fbo1->bind();
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	billboard->paint(&info, deferredDirLightPainter.get());
 
-	info.mtrTexIdx[0] = fbo1->textureId();
+	info.mtrTex[0] = fbo1->texture();
 	fbo2->bind();
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	billboard->paint(&info, deferredSsdoPaintVisitor.get());
 	
+	//Bloom down sample
+	for (int i = 0; i < bloomMipLevel; i++) {
+		glViewport(0, 0, bloomMipFbos[i]->texture()->size().x(), bloomMipFbos[i]->texture()->size().y());
+		bloomMipFbos[i]->bind();
+		info.bloomSampleState = i+1;
+		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
+	}
+
+	//Bloom up sample
+	for (int i = bloomMipLevel - 1; i >= 1; i--) {
+		glViewport(0, 0, bloomMipFbos[i - 1]->texture()->size().x(), bloomMipFbos[i - 1]->texture()->size().y());
+		bloomMipFbos[i-1]->bind();
+		info.bloomSampleState = -i-1;
+		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
+	}
+	glViewport(0, 0, info.width, info.height);
 
 	//Forward Shading
 	//#TODO0
@@ -177,10 +217,8 @@ void Scene::paintGL()
 	//axis.updateProjMat(camera->getProjMatrixForAxis());
 	//axis.paint();
 
-	//Gamma Ð£Õý
+	//toneMap
 	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-	GLFUNC->glActiveTexture(GL_TEXTURE0);
-	GLFUNC->glBindTexture(GL_TEXTURE_2D, fbo2->textureId());
 	billboard->paint(&info, toneMapPainter.get());
 }
 

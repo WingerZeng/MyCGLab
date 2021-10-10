@@ -1,10 +1,37 @@
 #version 430 core
 out vec4 FragColor;
 in vec2 texCoord;
-uniform sampler2D frame;
-uniform float gamma = 2.2;
+uniform sampler2D finalHdrTex;
+uniform sampler2D bloomMip0;
+uniform vec2 size;
+const float gamma = 2.2;
+const float exposure = 0.5;
+
+/* Éý²ÉÑùËã·¨ */
+const int UpSampleCnt = 9;
+const vec2 UpSampleQryOffset[UpSampleCnt] = {
+	{0,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}
+};
+const float UpSampleQryWeights[UpSampleCnt] = {
+	0.25,0.0625,0.125,0.0625,0.125,0.0625,0.125,0.0625,0.125
+};
+vec3 UpSample(){
+	vec3 ret;
+	vec2 unitStepInOriTex = 2/size; 
+	for(int i=0;i<UpSampleCnt;i++){
+		ret += texture(bloomMip0, texCoord + UpSampleQryOffset[i]*unitStepInOriTex).xyz * UpSampleQryWeights[i];
+	}
+	return ret;
+}
 
 void main(){
 	FragColor.a = 1;
-	FragColor.rgb = pow(texture(frame,texCoord).rgb, vec3(1.0/gamma));
+    vec3 hdrColor = texture(finalHdrTex,texCoord).rgb;
+    // exposure tone mapping
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+    // gamma correction 
+	mapped += UpSample()/20;
+    mapped = pow(mapped, vec3(1.0 / gamma));
+  
+    FragColor = vec4(mapped, 1.0);
 }

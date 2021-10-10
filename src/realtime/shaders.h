@@ -128,6 +128,8 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(FragShader_ToneMap);
 
+	DEF_SHADER_SOURCE(FragShader_BloomFilter);
+
 	DEF_SHADER_SOURCE(FragShader_DeferredDirectLight);
 
 	DEF_SHADER_SOURCE(FragShader_DeferredSSDO);
@@ -150,6 +152,7 @@ namespace mcl {
 	using PointShader = Shader<VertexShader_Mesh, GeoShader_Point, FragShader_Mesh>;
 	using LightPerFragShader = Shader<VertexShader_OutputPos, GeoShader_LightedMesh_CalNormal, FragShader_LightPerFrag>;
 	using ToneMapShader = Shader<VertexShader_PostProc, FragShader_ToneMap>;
+	using BloomFilterShader = Shader<VertexShader_PostProc, FragShader_BloomFilter>;
 	using CubeShaodwMapShader = Shader<VertexShader_CubeShadowMap, GeoShader_CubeShadowMap, FragShader_ShadowMap>;
 	using DeferredDirectLightShader = Shader<VertexShader_PostProc, FragShader_DeferredDirectLight>;
 	using DeferredSsdoShader = Shader<VertexShader_PostProc, FragShader_DeferredSSDO>;
