@@ -16,7 +16,6 @@ mcl::ToneMapPaintVisitor::ToneMapPaintVisitor()
 int mcl::ToneMapPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	ToneMapShader::ptr()->bind();
 	tri->getVAO()->bind();
 	info->finalHdrTexture->bindToUniform("finalHdrTex", ToneMapShader::ptr());
@@ -29,7 +28,6 @@ int mcl::ToneMapPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 int mcl::DeferredDirectLightPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	DeferredDirectLightShader::ptr()->bind();
 	info->setUniformValue(DeferredDirectLightShader::ptr(), DEFFER_LIGHTING);
 	tri->getVAO()->bind();
@@ -40,7 +38,6 @@ int mcl::DeferredDirectLightPaintVisitor::paintTris(PaintInfomation* info, PTriM
 int mcl::DeferredSsdoPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	DeferredSsdoShader::ptr()->bind();
 	info->setUniformValue(DeferredSsdoShader::ptr(), DEFFER_LIGHTING);
 	tri->getVAO()->bind();
@@ -51,24 +48,23 @@ int mcl::DeferredSsdoPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tr
 int mcl::BloomFilterPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	BloomFilterShader::ptr()->bind();
 	BloomFilterShader::ptr()->setUniformValue("isDownSample", info->bloomSampleState > 0);
 	if (info->bloomSampleState > 0) {
 		if (info->bloomSampleState == 1) {
 			info->finalHdrTexture->bindToUniform("prevTex", BloomFilterShader::ptr());
-			BloomFilterShader::ptr()->setUniformValue("useKarisAverage", true);
+			BloomFilterShader::ptr()->setUniformValue("firstDownSample", true);
 		}
 		else {
 			info->bloomMipTex[info->bloomSampleState - 2]->bindToUniform("prevTex", BloomFilterShader::ptr());
-			BloomFilterShader::ptr()->setUniformValue("useKarisAverage", false);
+			BloomFilterShader::ptr()->setUniformValue("firstDownSample", false);
 		}
 		BloomFilterShader::ptr()->setUniformValue("size", QVector2D(info->bloomMipTex[info->bloomSampleState - 1]->size().x(), info->bloomMipTex[info->bloomSampleState - 1]->size().y()));
 	}
 	if (info->bloomSampleState < 0) {
 		info->bloomMipTex[-info->bloomSampleState - 1]->bindToUniform("prevTex", BloomFilterShader::ptr());
 		info->bloomMipTex[-info->bloomSampleState - 2]->bindToUniform("curTex", BloomFilterShader::ptr());
-		BloomFilterShader::ptr()->setUniformValue("useKarisAverage", false);
+		BloomFilterShader::ptr()->setUniformValue("firstDownSample", false);
 		BloomFilterShader::ptr()->setUniformValue("size", QVector2D(info->bloomMipTex[-info->bloomSampleState - 2]->size().x(), info->bloomMipTex[-info->bloomSampleState - 2]->size().y()));
 	}
 	tri->getVAO()->bind();

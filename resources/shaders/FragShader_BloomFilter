@@ -5,10 +5,13 @@ uniform sampler2D prevTex; //滤波的输入图像
 uniform sampler2D curTex;  //目标Mipmap等级的图像（升采样时使用）
 uniform bool isDownSample;
 // 为true则对于降采样采用"Karis Average"，目前只针对Mip0->Mip1开启
-uniform bool useKarisAverage=false; 
+uniform bool firstDownSample=false; 
 // 目标图像的长宽
 uniform vec2 size;
 
+const float threshold = 1;
+
+//计算相对亮度函数
 float lum(vec3 c){
 	return 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
 }
@@ -38,8 +41,16 @@ vec3 DownSample(){
 	vec2 unitStepInPevTex = 0.5/size; 
 	for(int i=0;i<DownSampleCnt;i++){
 		qrys[i] = texture(prevTex, texCoord + DownSampleQryOffset[i]*unitStepInPevTex).xyz;
+		//第一次降采样时，进行亮部过滤
+		if(firstDownSample){
+			if(lum(qrys[i])<threshold)
+				qrys[i] = vec3(0);
+		}
 	}
+
 	vec3 ret = vec3(0);
+	// 为了增强bloom效果，笔者关闭了"Karis Average"
+	//if(firstDownSample){
 	if(false){
 		// 将每个查询值计算Karis Average权重
 		float qrysKarisWeight[DownSampleCnt]; 
@@ -75,12 +86,10 @@ const float UpSampleQryWeights[UpSampleCnt] = {
 	0.25,0.0625,0.125,0.0625,0.125,0.0625,0.125,0.0625,0.125
 };
 vec3 UpSample(){
-	//#TEST #TODO 两个等级之间的混合因子？
-	vec3 ret = texture(curTex, texCoord).xyz / 2;
+	vec3 ret = texture(curTex, texCoord).xyz;
 	vec2 unitStepInOriTex = 2/size; 
 	for(int i=0;i<UpSampleCnt;i++){
-		//#TEST #TODO 两个等级之间的混合因子？
-		ret += texture(prevTex, texCoord + UpSampleQryOffset[i]*unitStepInOriTex).xyz * UpSampleQryWeights[i] / 2;
+		ret += texture(prevTex, texCoord + UpSampleQryOffset[i]*unitStepInOriTex).xyz * UpSampleQryWeights[i];
 	}
 	return ret;
 }

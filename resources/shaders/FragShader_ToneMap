@@ -6,8 +6,10 @@ uniform sampler2D bloomMip0;
 uniform vec2 size;
 const float gamma = 2.2;
 const float exposure = 0.5;
+//Bloom 效果缩放系数
+const float bloomFactor = 0.02;
 
-/* 升采样算法 */
+/* 升采样Bloom Mip1 */
 const int UpSampleCnt = 9;
 const vec2 UpSampleQryOffset[UpSampleCnt] = {
 	{0,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}
@@ -29,8 +31,9 @@ void main(){
     vec3 hdrColor = texture(finalHdrTex,texCoord).rgb;
     // exposure tone mapping
     vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+	// up sample bloom mip1
+	mapped += UpSample() * bloomFactor;
     // gamma correction 
-	mapped += UpSample()/20;
     mapped = pow(mapped, vec3(1.0 / gamma));
   
     FragColor = vec4(mapped, 1.0);

@@ -38,6 +38,7 @@ const float PI = 3.14159269;
 const int PcfSampleCnt = 6;
 const int PcssSampleCnt = 4;
 const float PseudoRandomFactor = 0.8;
+const float PcssShadowEdgeFadeFactor = 5;
 const float FullShadowedBlockerRate = 0.1;
 const float lightAreaScale = 1;
 const bool outputUnshadowedRate = false;
@@ -105,38 +106,43 @@ float calBlockerDist(int lightIdx, vec3 lightVec){
 	return dBlocker * (lights[lightIdx].farPlane - lights[lightIdx].nearPlane) + lights[lightIdx].nearPlane;
 }
 
-float calShadowEdgeFadeValue(int lightIdx, vec3 pProjectInLight, float fadeFactor, int dim1, int dim2){
+float calShadowEdgeFadeValue(int lightIdx, vec3 pProjectInLight, int dim1, int dim2){
 	float temp = 0;
 	float dist1 = min(pProjectInLight[dim1] - lights[lightIdx].bound[0][dim1], lights[lightIdx].bound[1][dim1] - pProjectInLight[dim1]);
 	float dist2 = min(pProjectInLight[dim2] - lights[lightIdx].bound[0][dim2], lights[lightIdx].bound[1][dim2] - pProjectInLight[dim2]);
-	temp = (dist1 / (lights[lightIdx].bound[1][dim1] - lights[lightIdx].bound[0][dim1]) + dist2 / (lights[lightIdx].bound[1][dim2] - lights[lightIdx].bound[0][dim2])) * fadeFactor;
+	temp = (dist1 / (lights[lightIdx].bound[1][dim1] - lights[lightIdx].bound[0][dim1]) + dist2 / (lights[lightIdx].bound[1][dim2] - lights[lightIdx].bound[0][dim2])) * PcssShadowEdgeFadeFactor;
 	return min(temp, 1.0);
 }
 
 float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	int d1 = (dim+1)%3;
 	int d2 = (dim+2)%3;
-	//cal average blocker dist
+	//cal average blocker dist, pass 1
 	float avgBlockerDist = 0;
 	float blockerCnt = 0;
-	float offset1 = lvalues[lightIdx].extent[d1] * lightAreaScale / PcssSampleCnt;
-	float offset2 = lvalues[lightIdx].extent[d1] * lightAreaScale / PcssSampleCnt;
+	vec2 lightExtent = vec2(lvalues[lightIdx].extent[d1],lvalues[lightIdx].extent[d2]) * lightAreaScale;
+	//平方采样
+	vec2 lightExtentSqrt = sqrt(lightExtent);
+	float offset1 = lightExtentSqrt[0] / PcssSampleCnt;
+	float offset2 = lightExtentSqrt[1] / PcssSampleCnt;
+	//#TODO1 整理代码
 	//now don't consider light source with zero area
 	if(offset1<=1e-16 || offset2<=1e-16)
 		return 0;
+	
 	for(int i=0;i<PcssSampleCnt;i++){
-		float d1offset = offset1 * i - lvalues[lightIdx].extent[d1] * lightAreaScale / 2;
+		float d1offset = offset1 * i - lightExtentSqrt[0] / 2;
 		vec3 offset = {0,0,0};
 		offset[d1] = d1offset;
 		for(int j=0;j<PcssSampleCnt;j++){
-			float d2offset = offset2 * j - lvalues[lightIdx].extent[d2] * lightAreaScale / 2;
+			float d2offset = offset2 * j - lightExtentSqrt[1] / 2;
 			offset[d2] = d2offset;
 			vec3 Vsa = lightVec + offset;
 
 			//pseudo-random
 			offset[d1] += (random(Vsa)*0.5*PseudoRandomFactor + 0.5) * offset1;
 			offset[d2] += (random(Vsa)*0.5*PseudoRandomFactor + 0.5) * offset2;
-			Vsa = lightVec + offset;
+			Vsa = lightVec + offset * abs(offset);
 
 			float dBlocker = calBlockerDist(lightIdx, Vsa);
 			if(dBlocker < receiverDist - lights[lightIdx].shadowOffset){
@@ -149,14 +155,14 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
 					//fade with distance
-					float fadeVal = calShadowEdgeFadeValue(lightIdx, pProjectInLight, 4, d1, d2);
+					float fadeVal = calShadowEdgeFadeValue(lightIdx, pProjectInLight, d1, d2);
 					avgBlockerDist += dBlocker * dBlocker * fadeVal;
 					blockerCnt = blockerCnt + 1.0 * fadeVal;
 				}
 			}
 		}
 	}
-
+	
 	if(blockerCnt==0) return 1;
 	if(avgBlockerDist <= 0) return 0;
 	avgBlockerDist /= blockerCnt;
@@ -198,7 +204,7 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 				&& pProjectInLight[d2] >= lights[lightIdx].bound[0][d2] && pProjectInLight[d2] <= lights[lightIdx].bound[1][d2])
 				{
 					//fade with distance
-					float fadeVal = calShadowEdgeFadeValue(lightIdx, pProjectInLight, 5, d1, d2);
+					float fadeVal = calShadowEdgeFadeValue(lightIdx, pProjectInLight, d1, d2);
 					ret+=1-fadeVal;
 				}
 				else{
@@ -210,8 +216,8 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	}
 	if(discardCnt == PcfSampleCnt * PcfSampleCnt) return 1;
 	ret /= (PcfSampleCnt * PcfSampleCnt - discardCnt);
-	//fade from full lit to penumbra
 	//return ret;
+	//fade from full lit to penumbra
 	return mix(1, ret, min(1.0, blockerCnt * 1.0 / PcssSampleCnt / PcssSampleCnt / FullShadowedBlockerRate));
 }
 

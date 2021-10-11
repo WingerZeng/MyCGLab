@@ -133,7 +133,7 @@ namespace mcl {
 	{
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-		tex = std::make_shared<GLTextureCubeMap>(GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, GL_FLOAT);
+		tex = std::make_shared<GLTextureCubeMap>(GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT);
 		tex->setFilter(GL_LINEAR, GL_LINEAR);
 		tex->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 

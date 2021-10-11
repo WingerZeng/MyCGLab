@@ -97,7 +97,7 @@ namespace mcl {
 
 		int rbo;
 
-		static const int MaxBloomMipLevel = 3;
+		static const int MaxBloomMipLevel = 5;
 		static const int bloomMipStopSize = 8;
 		int bloomMipLevel = MaxBloomMipLevel;
 

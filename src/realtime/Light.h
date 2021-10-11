@@ -55,7 +55,7 @@ namespace mcl {
 	private:
 		std::shared_ptr<GLShadowMapFrameBufferObject> fbo;
 		const Float FarPlane = 1e3;
-		const Float NearPlane = 0.01;
+		const Float NearPlane = 0.001;
 		GLfloat shadowOffset;
 		GLuint smWidth, smHeight;
 		Float halfArea;

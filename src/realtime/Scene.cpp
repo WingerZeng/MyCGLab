@@ -138,7 +138,8 @@ void Scene::paintGL()
 	debugOpenGL();
 
 	//Prepare shadow map
-	if (bNeedInitLight) {
+	//#TEST
+	//if (bNeedInitLight) {
 		for (int i = 0; i < lights_.size(); i++) {
 			std::shared_ptr<PointLight> ptlight = std::dynamic_pointer_cast<PointLight>(lights_[i]);
 			if (ptlight) {
@@ -147,10 +148,11 @@ void Scene::paintGL()
 				ptlight->getFbo()->bind();
 				GLFUNC->glViewport(0, 0, ptlight->shadowMapSize().x(), ptlight->shadowMapSize().y());
 				GLFUNC->glEnable(GL_DEPTH_TEST);
-				GLFUNC->glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-				GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				GLFUNC->glClear(GL_DEPTH_BUFFER_BIT);
 				PaintInfomation info;
 				for (auto& prim : prims_) {
+					if(prim.first == ptlight->primitive()->id())
+						continue;
 					prim.second->paint(&info, smpainter.get());
 				}
 			}
@@ -159,7 +161,7 @@ void Scene::paintGL()
 		GLFUNC->glViewport(0, 0, this->width(), this->height());
 		bNeedInitLight = false;
 		info.lights = lights_;
-	}
+	//}
 
 	mtrfbo->bind();
 	GLFUNC->glEnable(GL_DEPTH_TEST);
@@ -191,6 +193,7 @@ void Scene::paintGL()
 	for (int i = 0; i < bloomMipLevel; i++) {
 		glViewport(0, 0, bloomMipFbos[i]->texture()->size().x(), bloomMipFbos[i]->texture()->size().y());
 		bloomMipFbos[i]->bind();
+		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
 		info.bloomSampleState = i+1;
 		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
 	}
@@ -219,6 +222,7 @@ void Scene::paintGL()
 
 	//toneMap
 	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	billboard->paint(&info, toneMapPainter.get());
 }
 
