@@ -27,6 +27,12 @@ namespace mcl {
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
 
+	class DeferredCompositePaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
+
 	class BloomFilterPaintVisitor : public PostProcPaintVisitor
 	{
 	public:

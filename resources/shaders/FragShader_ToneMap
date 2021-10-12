@@ -5,7 +5,7 @@ uniform sampler2D finalHdrTex;
 uniform sampler2D bloomMip0;
 uniform vec2 size;
 const float gamma = 2.2;
-const float exposure = 0.5;
+const float exposure = 2;
 //Bloom 效果缩放系数
 const float bloomFactor = 0.02;
 

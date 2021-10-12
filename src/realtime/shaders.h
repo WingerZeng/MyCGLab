@@ -134,6 +134,8 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(FragShader_DeferredSSDO);
 
+	DEF_SHADER_SOURCE(FragShader_DeferredComposite);
+	
 	DEF_SHADER_SOURCE(VertexShader_CubeShadowMap);
 
 	DEF_SHADER_SOURCE(GeoShader_CubeShadowMap);
@@ -156,6 +158,7 @@ namespace mcl {
 	using CubeShaodwMapShader = Shader<VertexShader_CubeShadowMap, GeoShader_CubeShadowMap, FragShader_ShadowMap>;
 	using DeferredDirectLightShader = Shader<VertexShader_PostProc, FragShader_DeferredDirectLight>;
 	using DeferredSsdoShader = Shader<VertexShader_PostProc, FragShader_DeferredSSDO>;
+	using DeferredCompositeShader = Shader<VertexShader_PostProc, FragShader_DeferredComposite>;
 	int initAllShaders();
 }
 

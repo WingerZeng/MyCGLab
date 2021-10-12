@@ -2,13 +2,11 @@
 out vec4 FragColor;
 in vec2 texCoord;
 
-uniform sampler2D fragColor;
 uniform sampler2D albedo;
 uniform sampler2D worldPos;
 uniform sampler2D normal;
 uniform sampler2D depth;
 uniform mat4 world2Screen;
-//#TODO0
 uniform float sceneExtent = 1;
 
 /* lights variants */
@@ -221,15 +219,14 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	return mix(1, ret, min(1.0, blockerCnt * 1.0 / PcssSampleCnt / PcssSampleCnt / FullShadowedBlockerRate));
 }
 
+//#TODO ¸ù¾Ýprim id bufferÀ´blur shadow map
 void main(){
 	//prepare global value
 	//mtr values
 	aWorldPos = texture(worldPos, texCoord).xyz;
 	aNormal = texture(normal, texCoord).xyz;
 	aAlbedo = texture(albedo, texCoord).xyz;
-	aFragColor = texture(fragColor, texCoord);
 	aDepth = texture(depth, texCoord).r;
-	FragColor += aFragColor;
 
 	//calculate direct light
 	vec3 totLight;

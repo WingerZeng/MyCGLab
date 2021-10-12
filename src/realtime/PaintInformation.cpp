@@ -19,10 +19,10 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		shader->setUniformValue("selectedColor", QVector3D(selectedColor));
 		shader->setUniformValue("hasNormal", hasNormal);
 		break;
-	case mcl::DEFFER_LIGHTING:
+	case mcl::DEFFER_DIRECT_LIGHT:
 		shader->setUniformValue("world2Screen", projMat * viewMat);
 		shader->setUniformValue("lightCount", GLint(lights.size()));
-		mtrTex[0]->bindToUniform("fragColor", shader);
+		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
 		mtrTex[1]->bindToUniform("albedo", shader);
 		mtrTex[2]->bindToUniform("worldPos", shader);
 		mtrTex[3]->bindToUniform("normal", shader);
@@ -30,6 +30,24 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		for (int j = 0; j < lights.size(); j++) {
 			lights[j]->bind(shader, j, this->activeTextrueCnt);
 		}
+		break;
+	case mcl::DEFFER_SSDO:
+		shader->setUniformValue("world2Screen", projMat * viewMat);
+		shader->setUniformValue("lightCount", GLint(lights.size()));
+		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
+		mtrTex[1]->bindToUniform("albedo", shader);
+		mtrTex[2]->bindToUniform("worldPos", shader);
+		mtrTex[3]->bindToUniform("normal", shader);
+		mtrTex[4]->bindToUniform("depth", shader);
+		directLightTexture->bindToUniform("directLightTexture", shader);
+		for (int j = 0; j < lights.size(); j++) {
+			lights[j]->bind(shader, j, this->activeTextrueCnt);
+		}
+		break;
+	case mcl::DEFFER_COMPOSITE:
+		mtrTex[0]->bindToUniform("fragColor", shader);
+		directLightTexture->bindToUniform("directLightTexture", shader);
+		ssdoTexture->bindToUniform("ssdoTexture", shader);
 		break;
 	case mcl::FORWARD_SHADING:
 		shader->setUniformValue("u_viewportSize", width, height);

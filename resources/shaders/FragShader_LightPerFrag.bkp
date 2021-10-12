@@ -48,8 +48,7 @@ float PCSS(int lightIdx, int dim, vec3 lightVec, float receiverDist){
 	const float lightAreaScale = 1;
 	float offset1 = (lights[lightIdx].bound[1][d1] - lights[lightIdx].bound[0][d1]) * lightAreaScale / PcssSampleCnt;
 	float offset2 = (lights[lightIdx].bound[1][d2] - lights[lightIdx].bound[0][d2]) * lightAreaScale / PcssSampleCnt;
-	//#TEST
-	int cnt = 0;
+
 	//now don't consider light source with zero area
 	if(offset1<=1e-10 || offset2<=1e-10)
 		return 0;

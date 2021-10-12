@@ -153,9 +153,6 @@ namespace mcl {
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		GLFUNC->glDrawBuffer(GL_NONE);
 		GLFUNC->glReadBuffer(GL_NONE);
-		//#TEST
-		if (GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			LOG(FATAL) << GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	}
 
 	void GLShadowMapFrameBufferObject::resize(int height, int width)
@@ -165,8 +162,6 @@ namespace mcl {
 		
 		tex->resize(width, height);
 		tex->bindToFbo(fbo, GL_DEPTH_ATTACHMENT);
-		//colortex->resize(width, height);
-		//colortex->bindToFbo(fbo, GL_COLOR_ATTACHMENT0);
 
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}

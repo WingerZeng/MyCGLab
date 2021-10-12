@@ -72,8 +72,6 @@ namespace mcl {
 
 	private:
 		std::shared_ptr<GLTextureCubeMap> tex;
-		//#TEST
-		std::shared_ptr<GLTextureCubeMap> colortex;
 	};
 
 	class GLMtrFrameBufferObject : public GLFrameBufferObject

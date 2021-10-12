@@ -18,7 +18,9 @@ namespace mcl {
 	enum PaintStage {
 		LIGHT_PREPARE,
 		DEFFER_PREPARE,
-		DEFFER_LIGHTING,
+		DEFFER_DIRECT_LIGHT,
+		DEFFER_SSDO,
+		DEFFER_COMPOSITE,
 		FORWARD_SHADING
 	};
 
@@ -36,8 +38,11 @@ namespace mcl {
 		Color3f selectedColor = Color3f(1,0,0);
 		int activeTextrueCnt = 0;
 		void setUniformValue(QOpenGLShaderProgram* shader, PaintStage stage);
+		Bound3f sceneBnd;
 
 		std::vector<std::shared_ptr<GLAbstractTexture>> mtrTex;
+		std::shared_ptr<GLAbstractTexture> directLightTexture; //vec4(Œ¥º”“ı”∞µƒdirectLightColor, shadowRate)
+		std::shared_ptr<GLAbstractTexture> ssdoTexture;
 		std::shared_ptr<GLAbstractTexture> finalHdrTexture;
 		std::vector<std::shared_ptr<GLAbstractTexture>> bloomMipTex;
 		int bloomSampleState; //if (0,), down sample from Mip i-1 to Mip i. if (,0), up sample from Mip -i to Mip -i-1

@@ -78,8 +78,9 @@ void Scene::initializeGL()
 
 	billboard = PTriMesh::createBillBoard();
 	billboard->initAll();
-	fbo1 = std::make_shared<GLColorFrameBufferObject>();
-	fbo2 = std::make_shared<GLColorFrameBufferObject>();
+	directLightFbo = std::make_shared<GLColorFrameBufferObject>();
+	ssdoFbo = std::make_shared<GLColorFrameBufferObject>();
+	compositeFbo = std::make_shared<GLColorFrameBufferObject>();
 	msfbo = std::make_shared<GLMultiSampleFrameBufferObject>(sampleRate);
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
 	for (int i = 0; i < MaxBloomMipLevel; i++) {
@@ -94,7 +95,9 @@ void Scene::initializeGL()
 	//init paint info
 	info.lineWidth = 1.5f;
 	info.pointSize = 8.0f;
-	info.finalHdrTexture = fbo2->texture();
+	info.ssdoTexture = ssdoFbo->texture();
+	info.finalHdrTexture = compositeFbo->texture();
+	info.directLightTexture = directLightFbo->texture();
 	for (int i=0;i<MaxBloomMipLevel;i++){
 		info.bloomMipTex.push_back(bloomMipFbos[i]->texture());
 	}
@@ -106,8 +109,9 @@ void Scene::resizeGL(int w, int h)
 {
 	GLFUNC->glViewport(0, 0, w, h);
 	camera->initialize(w, h);
-	fbo1->resize(h, w);
-	fbo2->resize(h, w);
+	directLightFbo->resize(h, w);
+	ssdoFbo->resize(h, w);
+	compositeFbo->resize(h, w);
 	msfbo->resize(h, w);
 	mtrfbo->resize(h, w);
 
@@ -138,8 +142,7 @@ void Scene::paintGL()
 	debugOpenGL();
 
 	//Prepare shadow map
-	//#TEST
-	//if (bNeedInitLight) {
+	if (bNeedInitLight) {
 		for (int i = 0; i < lights_.size(); i++) {
 			std::shared_ptr<PointLight> ptlight = std::dynamic_pointer_cast<PointLight>(lights_[i]);
 			if (ptlight) {
@@ -161,7 +164,7 @@ void Scene::paintGL()
 		GLFUNC->glViewport(0, 0, this->width(), this->height());
 		bNeedInitLight = false;
 		info.lights = lights_;
-	//}
+	}
 
 	mtrfbo->bind();
 	GLFUNC->glEnable(GL_DEPTH_TEST);
@@ -177,18 +180,23 @@ void Scene::paintGL()
 		prim.second->paint(&info, mtrPainter.get());
 	}
 
-	//Deferred Shading
+	// Deferred Shading
 	info.mtrTex = mtrfbo->transferedTextureId();
-	//direct light
-	fbo1->bind();
+	// direct light
+	directLightFbo->bind();
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	billboard->paint(&info, deferredDirLightPainter.get());
 
-	info.mtrTex[0] = fbo1->texture();
-	fbo2->bind();
+	// SSDO
+	ssdoFbo->bind();
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	billboard->paint(&info, deferredSsdoPaintVisitor.get());
 	
+	//Composite
+	compositeFbo->bind();
+	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	billboard->paint(&info, Singleton<DeferredCompositePaintVisitor>::getSingleton());
+
 	//Bloom down sample
 	for (int i = 0; i < bloomMipLevel; i++) {
 		glViewport(0, 0, bloomMipFbos[i]->texture()->size().x(), bloomMipFbos[i]->texture()->size().y());
@@ -281,12 +289,14 @@ void Scene::updateScene(UpdateReason reason)
 		for (const auto& prim : primsToAdd) {
 			sceneBound.unionBd(prim->getBound());
 		}
+		info.sceneBnd = sceneBound;
 		Float len = (sceneBound.pMax() - sceneBound.pMin()).length();
 		for (auto& light : lights_) {
 			if (std::dynamic_pointer_cast<PointLight>(light)) {
 				std::dynamic_pointer_cast<PointLight>(light)->setShadowOffset(len / 1000);
 			}
 		}
+
 	}
 	emit updated(reason);
 }

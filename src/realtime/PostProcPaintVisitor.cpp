@@ -29,7 +29,7 @@ int mcl::DeferredDirectLightPaintVisitor::paintTris(PaintInfomation* info, PTriM
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
 	DeferredDirectLightShader::ptr()->bind();
-	info->setUniformValue(DeferredDirectLightShader::ptr(), DEFFER_LIGHTING);
+	info->setUniformValue(DeferredDirectLightShader::ptr(), DEFFER_DIRECT_LIGHT);
 	tri->getVAO()->bind();
 	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 	return 0;
@@ -39,7 +39,7 @@ int mcl::DeferredSsdoPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tr
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
 	DeferredSsdoShader::ptr()->bind();
-	info->setUniformValue(DeferredSsdoShader::ptr(), DEFFER_LIGHTING);
+	info->setUniformValue(DeferredSsdoShader::ptr(), DEFFER_SSDO);
 	tri->getVAO()->bind();
 	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 	return 0;
@@ -67,6 +67,16 @@ int mcl::BloomFilterPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri
 		BloomFilterShader::ptr()->setUniformValue("firstDownSample", false);
 		BloomFilterShader::ptr()->setUniformValue("size", QVector2D(info->bloomMipTex[-info->bloomSampleState - 2]->size().x(), info->bloomMipTex[-info->bloomSampleState - 2]->size().y()));
 	}
+	tri->getVAO()->bind();
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
+	return 0;
+}
+
+int mcl::DeferredCompositePaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
+{
+	GLFUNC->glDisable(GL_DEPTH_TEST);
+	DeferredCompositeShader::ptr()->bind();
+	info->setUniformValue(DeferredCompositeShader::ptr(), DEFFER_COMPOSITE);
 	tri->getVAO()->bind();
 	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 	return 0;

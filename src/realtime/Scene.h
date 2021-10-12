@@ -106,8 +106,9 @@ namespace mcl {
 		std::shared_ptr<PaintVisitor> deferredSsdoPaintVisitor;
 		std::shared_ptr<PaintVisitor> forwardPainter;
 		std::shared_ptr<ToneMapPaintVisitor> toneMapPainter;
-		std::shared_ptr<GLColorFrameBufferObject> fbo1;
-		std::shared_ptr<GLColorFrameBufferObject> fbo2;
+		std::shared_ptr<GLColorFrameBufferObject> directLightFbo;
+		std::shared_ptr<GLColorFrameBufferObject> ssdoFbo;
+		std::shared_ptr<GLColorFrameBufferObject> compositeFbo;
 		std::shared_ptr<GLColorFrameBufferObject> bloomMipFbos[MaxBloomMipLevel];
 		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
 		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;

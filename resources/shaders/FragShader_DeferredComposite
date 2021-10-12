@@ -1,0 +1,48 @@
+#version 430 core
+out vec4 FragColor;
+in vec2 texCoord;
+
+//uniform textures
+uniform sampler2D fragColor;
+uniform sampler2D directLightTexture;
+uniform sampler2D ssdoTexture;
+
+// ssdo blur varients
+// Gaussin Kernel
+const int SsdoBlurSampleCnt = 25;
+const vec2 SsdoBlurOffset[SsdoBlurSampleCnt] = {
+	{-2, 2},{-1, 2},{0, 2},{1, 2},{2, 2},
+	{-2, 1},{-1, 1},{0, 1},{1, 1},{2, 1},
+	{-2, 0},{-1, 0},{0, 0},{1, 0},{2, 0},
+	{-2,-1},{-1,-1},{0,-1},{1,-1},{2,-1},
+	{-2,-2},{-1,-2},{0,-2},{1,-2},{2,-2},
+};
+const float SsdoBlurWeights[SsdoBlurSampleCnt] = {
+	36, 90, 120, 90, 36,
+	90, 225,300, 225,90,
+	120,300,400, 300,120,
+	90, 225,300, 225,90,
+	36, 90, 120, 90, 36,
+};
+const float SsdoBlurWeightSumInv = 1.0 / 3844;
+
+// tent Kernel
+//const int SsdoBlurSampleCnt = 9;
+//const vec2 SsdoBlurOffset[SsdoBlurSampleCnt] = {
+//	{0,0},{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}
+//};
+//const float SsdoBlurWeights[SsdoBlurSampleCnt] = {
+//	0.25,0.0625,0.125,0.0625,0.125,0.0625,0.125,0.0625,0.125
+//};
+
+void main(){
+	// blur ssdo
+	FragColor = vec4(0,0,0,1);
+	vec2 texSize = 1/vec2(textureSize(fragColor,0));
+	for(int i=0;i<25;i++){
+		FragColor += texture(ssdoTexture,texCoord + SsdoBlurOffset[i]*texSize)*SsdoBlurWeights[i];
+	}
+	FragColor *= SsdoBlurWeightSumInv;
+	FragColor += texture(directLightTexture, texCoord);
+	FragColor += texture(fragColor, texCoord);
+}
