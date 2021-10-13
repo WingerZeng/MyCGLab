@@ -46,11 +46,9 @@ namespace mcl {
 
 	private:
 		std::shared_ptr<Texture<Color3f>> diffuse;
-
+		DataNode* data;
 		//For real-time
-		ParameterType kdtype;
-		QVector4D kd;
-		QString kd_map;
+		std::shared_ptr<GLTexture2D> glkd;
 	};
 }
 

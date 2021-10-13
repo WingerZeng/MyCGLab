@@ -1,7 +1,7 @@
 #pragma once
 #include "mcl.h"
 #include "types.h"
-
+#include "Material.h"
 class QOpenGLShaderProgram;
 
 namespace mcl {
@@ -51,6 +51,11 @@ namespace mcl {
 		void setFilter(GLuint minFilter, GLuint maxFilter);
 
 		void setWrap(GLuint s, GLuint t);
+
+		static std::shared_ptr<GLTexture2D> createColorGLTexture2D(Color3f scale, const QString& texture, bool sRGB);
+		static std::shared_ptr<GLTexture2D> createColorGLTexture2D(Color3f color);
+		static std::shared_ptr<GLTexture2D> createFloatGLTexture2D(Float scale, const QString& texture);
+		static std::shared_ptr<GLTexture2D> createFloatGLTexture2D(Float color);
 	private:
 		GLuint internalType;
 		GLuint baseType;

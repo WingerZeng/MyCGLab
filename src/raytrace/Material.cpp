@@ -5,6 +5,7 @@
 #include "materials/Mirror.h"
 #include "materials/Dielectric.h"
 #include "Texture.h"
+#include "GLTexture.h"
 #include "algorithms.h"
 namespace mcl{
 
@@ -230,12 +231,12 @@ namespace mcl{
 		}
 	}
 
-	mcl::Material::ParameterType Material::getColorTexture(QString name, DataNode* node, QVector4D& color, QString& texture)
+	mcl::Material::ParameterType Material::getColorTexture(QString name, DataNode* node, Color3f& color, QString& texture)
 	{
 		ParameterType ret = P_NULL;
 		auto cnode = node->fd(name);
 		if (cnode) {
-			color = QVector4D(QVector3D(cnode->toVector3f()));
+			color = cnode->toVector3f();
 			ret = ParameterType(ret | P_Color);
 		}
 		QString mapname = "map_" + name;
@@ -259,7 +260,7 @@ namespace mcl{
 			ct = std::make_shared<ConstantTexture<Float>>(cnode->toDouble());
 		}
 		std::shared_ptr<PixelMapTexture> mt;
-		//暂时不支持Float纹理的贴图
+		//#TODO1 暂时不支持Float纹理的贴图
 		//QString mapname = "map_" + name;
 		//auto mapnode = node->fd(mapname);
 		//if (mapnode && QFile(mapnode->getV()).exists()) {
@@ -285,7 +286,7 @@ namespace mcl{
 		ParameterType ret = P_NULL;
 		auto cnode = node->fd(name);
 		if (cnode) {
-			ret = ParameterType(ret | P_Color);
+			ret = ParameterType(ret | P_Float);
 			value = cnode->toDouble();
 		}
 		//暂时不支持Float纹理的贴图
@@ -303,6 +304,32 @@ namespace mcl{
 		//}
 		return ret;
 	}
+
+	std::shared_ptr<mcl::GLTexture2D> Material::createGLTexture(ParameterType ptype, Float value, const QString& texture)
+	{
+		if (ptype == P_Map) {
+			return GLTexture2D::createFloatGLTexture2D(1, texture);
+		}
+		else if (ptype == P_Float) {
+			return GLTexture2D::createFloatGLTexture2D(value);
+		}
+		else {
+			return GLTexture2D::createFloatGLTexture2D(value, texture);
+		}
+	}
+
+	std::shared_ptr<mcl::GLTexture2D> Material::createGLTexture(ParameterType ptype, Color3f value, const QString& texture, bool sRGB)
+	{
+		if (ptype == P_Map) {
+			return GLTexture2D::createColorGLTexture2D(Color3f(1, 1, 1), texture, sRGB);
+		}
+		else if (ptype == P_Color) {
+			return GLTexture2D::createColorGLTexture2D(value);
+		}
+		else {
+			return GLTexture2D::createColorGLTexture2D(value, texture, sRGB);
+		}
+	}	
 
 	int Material::inputToNode(ReadRemainString input, DataNode* node)
 	{

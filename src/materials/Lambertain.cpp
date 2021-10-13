@@ -1,6 +1,7 @@
 #include "Lambertain.h"
 #include "Record.h"
 #include "algorithms.h"
+#include "GLTexture.h"
 namespace mcl{
 	
 	LambertainBsdf::LambertainBsdf(const Color3f& factor, ScatterType sct)
@@ -110,9 +111,9 @@ namespace mcl{
 	}
 
 	LambertainMaterial::LambertainMaterial(DataNode* data)
+		:data(data)
 	{
 		diffuse = getColorTexture("Kd",data);
-		kdtype = getColorTexture("Kd", data, kd, kd_map);
 	}
 
 	std::unique_ptr<mcl::BsdfGroup> LambertainMaterial::getBsdfs(HitRecord* rec, Sampler& sampler) const
@@ -126,18 +127,18 @@ namespace mcl{
 
 	void LambertainMaterial::initGL()
 	{
-		//#TODO1 初始化纹理
+		ParameterType kdtype;
+		Color3f kd_vec;
+		QString kd_map;
+		kdtype = getColorTexture("Kd", data, kd_vec, kd_map);
+		glkd = createGLTexture(kdtype, kd_vec, kd_map, true);
 	}
 
 	void LambertainMaterial::prepareGL(QOpenGLShaderProgram* shader)
 	{
 		shader->setUniformValue("Le", QVector4D(QVector3D(getEmission()), 1));
-		shader->setUniformValue("MatType", (GLint)_type);
-		if (kdtype & P_Color) {
-			shader->setUniformValue("ourColor", kd);
-			shader->setUniformValue("Kd", kd);
-		}
-		//#TODO1 装载纹理
+		shader->setUniformValue("material.mtype", (GLint)_type);
+		glkd->bindToUniform("material.kd", shader);
 	}
 
 }

@@ -1,5 +1,6 @@
 #include "BlinnPhongMaterial.h"
 #include "algorithms.h"
+#include "GLTexture.h"
 namespace mcl{
 	
 	BlinnPhongMaterial::BlinnPhongMaterial(const std::shared_ptr<Texture<Color3f>>& kd, const std::shared_ptr<Texture<Color3f>>& ks, const std::shared_ptr<Texture<Float>>& ns)
@@ -8,13 +9,11 @@ namespace mcl{
 	}
 
 	BlinnPhongMaterial::BlinnPhongMaterial(DataNode* data)
+		:data(data)
 	{
 		kd = getColorTexture("Kd", data);
 		ks = getColorTexture("Ks", data);
 		ns = getFloatTexture("Ns", data);
-		kdtype = getColorTexture("Kd", data, kd_vec, kd_map);
-		kstype = getColorTexture("Ks", data, ks_vec, ks_map);
-		nstype = getFloatTexture("Ns", data, ns_float, ns_map);
 	}
 
 	std::unique_ptr<mcl::BsdfGroup> BlinnPhongMaterial::getBsdfs(HitRecord* rec, Sampler& sampler) const
@@ -33,24 +32,35 @@ namespace mcl{
 
 	void BlinnPhongMaterial::initGL()
 	{
-		//#TODO1 初始化纹理
+		//for real-time
+		ParameterType kdtype;
+		Color3f kd_vec;
+		QString kd_map;
+
+		ParameterType kstype;
+		Color3f ks_vec;
+		QString ks_map;
+
+		ParameterType nstype;
+		Float ns_float;
+		QString ns_map;
+
+		kdtype = getColorTexture("Kd", data, kd_vec, kd_map);
+		kstype = getColorTexture("Ks", data, ks_vec, ks_map);
+		nstype = getFloatTexture("Ns", data, ns_float, ns_map);
+
+		glkd = createGLTexture(kdtype, kd_vec, kd_map, true);
+		glks = createGLTexture(kstype, ks_vec, ks_map, false);
+		glns = createGLTexture(nstype, ns_float, ns_map);
 	}
 
 	void BlinnPhongMaterial::prepareGL(QOpenGLShaderProgram* shader)
 	{
-		//#TODO1 装载纹理
 		shader->setUniformValue("Le", QVector4D(QVector3D(getEmission()),1));
-		shader->setUniformValue("MatType", (GLint)_type);
-		if (kdtype & P_Color) {
-			shader->setUniformValue("ourColor", kd_vec);
-			shader->setUniformValue("Kd", kd_vec);
-		}
-		if (kstype & P_Color) {
-			shader->setUniformValue("Ks", ks_vec);
-		}
-		if (nstype & P_Float) {
-			shader->setUniformValue("Ns", ns_float);
-		}
+		shader->setUniformValue("material.mtype", (GLint)_type);
+		glkd->bindToUniform("material.kd", shader);
+		glks->bindToUniform("material.ks", shader);
+		glns->bindToUniform("material.ns", shader);
 	}
 
 	BlinnPhongBsdf::BlinnPhongBsdf(const Color3f& kd, const Color3f& ks, const Float& ns)

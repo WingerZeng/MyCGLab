@@ -31,6 +31,8 @@ namespace mcl {
 		virtual std::unique_ptr<BsdfGroup> getBsdfs(HitRecord* rec, Sampler& sampler) const override;
 	private:
 		std::shared_ptr<Texture<Color3f>> specular;
+
+		//#TODO1 real time Œ∆¿Ì
 	};
 }
 

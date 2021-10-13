@@ -43,6 +43,7 @@ namespace mcl {
 		std::shared_ptr<Texture<Color3f>> reflFactor;
 		std::shared_ptr<Texture<Color3f>> refrFactor;
 		Float eta1, eta2;
+		//#TODO1 real time Œ∆¿Ì
 	};
 }
 

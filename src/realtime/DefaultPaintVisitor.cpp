@@ -120,7 +120,8 @@ namespace mcl{
 				shader = LightPerFragShader::ptr();
 				shader->bind();
 				info->setUniformValue(shader, DEFFER_PREPARE);
-				shader->setUniformValue("ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
+				shader->setUniformValue("material.mtype", -1);
+				shader->setUniformValue("material.ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
 			else {
 				shader = CommonShader::ptr();
@@ -143,7 +144,7 @@ namespace mcl{
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {  //Ñ¡ÖÐÊ±Òþ²Ø
 			LineShader::ptr()->bind();
 			info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
-			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
+			LineShader::ptr()->setUniformValue("material.ourColor", .0, .0, .0, 1.0f);
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
 			GLFUNC->glPolygonOffset(-1, -1);
 

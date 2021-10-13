@@ -2,11 +2,12 @@
 																												   
 layout(triangles) in;																					   
 layout(triangle_strip, max_vertices = 3) out;															   
-out vec3 aNormal;											   
-out vec3 geoNormal;
-in vec3 normal[];
-in vec3 worldPos[];								
+out vec3 aNormal;		
 out vec3 aWorldPos;
+out vec2 aUv;
+in vec3 normal[];
+in vec3 worldPos[];		
+in vec2 uv[];
 uniform mat4 modelMat;
 uniform mat4 viewMat;
 uniform mat4 projMat;
@@ -20,7 +21,7 @@ void main()
 
 	vec3 edge1 = worldPos[1]-worldPos[0];
 	vec3 edge2 = worldPos[2]-worldPos[0];
-	geoNormal = normalize(cross(edge1,edge2));
+	vec3 geoNormal = normalize(cross(edge1,edge2));
 	vec4 viewNormal = transform * vec4(geoNormal, 0.0);
 	//透视投影下，双面光照的实现方法，计算三角形与相机构成的四面体的体积正负
 	if(dot(viewNormal.xyz, viewPoint0.xyz) > 0)
@@ -30,6 +31,7 @@ void main()
 																								   
 	gl_Position = gl_in[0].gl_Position;
 	aWorldPos = worldPos[0];	
+	aUv = uv[0];
 	if(hasNormal){
 		aNormal = normalize(normal[0]);
 		//调整法向指向摄像机
@@ -41,6 +43,7 @@ void main()
 
 	gl_Position = gl_in[1].gl_Position;
 	aWorldPos = worldPos[1];	
+	aUv = uv[1];
 	if(hasNormal){
 		aNormal = normalize(normal[1]);	
 		//调整法向指向摄像机
@@ -52,6 +55,7 @@ void main()
 
 	gl_Position = gl_in[2].gl_Position;
 	aWorldPos = worldPos[2];	
+	aUv = uv[2];
 	if(hasNormal){
 		aNormal = normalize(normal[2]);	
 		//调整法向指向摄像机

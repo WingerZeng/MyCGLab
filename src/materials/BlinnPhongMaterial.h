@@ -25,19 +25,12 @@ namespace mcl {
 		std::shared_ptr<Texture<Color3f>> kd;
 		std::shared_ptr<Texture<Color3f>> ks;
 		std::shared_ptr<Texture<Float>> ns;
+		DataNode* data;
 
 		//for real-time
-		ParameterType kdtype;
-		QVector4D kd_vec;
-		QString kd_map;
-
-		ParameterType kstype;
-		QVector4D ks_vec;
-		QString ks_map;
-
-		ParameterType nstype;
-		Float ns_float;
-		QString ns_map;
+		std::shared_ptr<GLTexture2D> glkd;
+		std::shared_ptr<GLTexture2D> glks;
+		std::shared_ptr<GLTexture2D> glns;
 	};
 
 

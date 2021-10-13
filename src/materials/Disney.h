@@ -30,6 +30,7 @@ namespace mcl {
 
 	private:
 		DisneyMaterialInfo info;
+		//#TODO1 realtime Œ∆¿Ì
 	};
 
 	class DisneyBrdf: public Bsdf

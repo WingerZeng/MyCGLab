@@ -75,10 +75,12 @@ namespace mcl {
 		static MeterialType getTypeByParameters(std::set<QString> parnames);
 
 		static std::shared_ptr<Texture<Color3f>> getColorTexture(QString name, DataNode* node);
-		static ParameterType getColorTexture(QString name, DataNode* node, QVector4D& color, QString& texture);
+		static ParameterType getColorTexture(QString name, DataNode* node, Color3f& color, QString& texture);
 		static std::shared_ptr<Texture<Float>> getFloatTexture(QString name, DataNode* node);
 		static ParameterType getFloatTexture(QString name, DataNode* node, Float& value, QString& texture);
 
+		static std::shared_ptr<GLTexture2D> createGLTexture(ParameterType ptype, Float value, const QString& texture);
+		static std::shared_ptr<GLTexture2D> createGLTexture(ParameterType ptype, Color3f value, const QString& texture, bool sRGB);
 		static int inputToNode(ReadRemainString input, DataNode* node);
 
 	protected:
