@@ -29,6 +29,7 @@ namespace mcl {
 
 	void GLColorFrameBufferObject::bind()
 	{
+		GLFUNC->glDisable(GL_DEPTH_TEST);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		if (GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			LOG(FATAL) << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
@@ -122,6 +123,12 @@ namespace mcl {
 		GLFUNC->glDeleteFramebuffers(1, &fbo);
 	}
 
+	void GLColorFrameBufferObject::clear(PaintInfomation* info)
+	{
+		GLFUNC->glClearColor(info->clearColor.x(), info->clearColor.y(), info->clearColor.z(), 1);
+		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
+	}
+
 	void GLFrameBufferObject::resize(int height, int width)
 	{
 		h = height;
@@ -148,11 +155,17 @@ namespace mcl {
 
 	void GLShadowMapFrameBufferObject::bind()
 	{
+		GLFUNC->glEnable(GL_DEPTH_TEST);
 		GLFUNC->glDrawBuffer(GL_NONE);
 		GLFUNC->glReadBuffer(GL_NONE);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		GLFUNC->glDrawBuffer(GL_NONE);
 		GLFUNC->glReadBuffer(GL_NONE);
+	}
+
+	void GLShadowMapFrameBufferObject::clear(PaintInfomation* info)
+	{
+		GLFUNC->glClear(GL_DEPTH_BUFFER_BIT);
 	}
 
 	void GLShadowMapFrameBufferObject::resize(int height, int width)
@@ -180,7 +193,7 @@ namespace mcl {
 		for (int i = 0; i < nTargetType; i++) {
 			targetTex.emplace_back(std::make_shared<GLTextureMultiSample>(targetFromats[i], nsample));
 			outputTex.emplace_back(std::make_shared<GLTexture2D>(targetFromats[i], targetBaseFromats[i], targetUnitFromats[i]));
-			outputTex[i]->setFilter(GL_LINEAR, GL_LINEAR);
+			outputTex[i]->setFilter(GL_NEAREST, GL_NEAREST);
 			outputTex[i]->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 		}
 
@@ -194,6 +207,7 @@ namespace mcl {
 
 	void GLMtrFrameBufferObject::bind()
 	{
+		GLFUNC->glEnable(GL_DEPTH_TEST);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		GLuint drawbuffers[nTargetType-1];
 		for (int i = 0; i < nTargetType-1; i++) {
@@ -202,6 +216,27 @@ namespace mcl {
 		GLFUNC->glDrawBuffers(nTargetType - 1, drawbuffers);
 		if (GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			LOG(FATAL) << GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	}
+
+	void GLMtrFrameBufferObject::clear(PaintInfomation* info)
+	{
+		GLFUNC->glClearColor(0, 0, 0, 1);
+		GLenum buffers[3] = { GL_COLOR_ATTACHMENT0 + ALBEDO, GL_COLOR_ATTACHMENT0 + WORLD_POS, GL_COLOR_ATTACHMENT0 + NORMAL };
+		GLFUNC->glDrawBuffers(3, buffers);
+		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
+
+		GLFUNC->glClearColor(1, 1, 1, 1);
+		GLFUNC->glClear(GL_DEPTH_BUFFER_BIT);
+
+		GLFUNC->glClearColor(info->emptyPrimIdColor.x(), info->emptyPrimIdColor.y(), info->emptyPrimIdColor.z(), 0);
+		GLFUNC->glDrawBuffer(GL_COLOR_ATTACHMENT0 + PRIMID);
+		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
+
+		GLuint drawbuffers[nTargetType - 1];
+		for (int i = 0; i < nTargetType - 1; i++) {
+			drawbuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+		}
+		GLFUNC->glDrawBuffers(nTargetType - 1, drawbuffers);
 	}
 
 	void GLMtrFrameBufferObject::resize(int height, int width)
@@ -255,6 +290,7 @@ namespace mcl {
 		GL_RGB16F, //ALBEDO
 		GL_RGB32F,//WORLD POS
 		GL_RGB32F,//NORMAL
+		GL_RGB8, //PRIMID
 		GL_DEPTH_COMPONENT, //DEPTH
 	};
 
@@ -263,6 +299,7 @@ namespace mcl {
 		GL_RGB, //ALBEDO
 		GL_RGB,//WORLD POS
 		GL_RGB,//NORMAL
+		GL_RGB, //PRIMID
 		GL_DEPTH_COMPONENT, //DEPTH
 	};
 
@@ -271,6 +308,7 @@ namespace mcl {
 		GL_FLOAT, //ALBEDO
 		GL_FLOAT,//WORLD POS
 		GL_FLOAT,//NORMAL
+		GL_UNSIGNED_BYTE, //PRIMID
 		GL_FLOAT, //DEPTH
 	};
 

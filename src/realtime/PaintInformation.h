@@ -21,7 +21,8 @@ namespace mcl {
 		DEFFER_DIRECT_LIGHT,
 		DEFFER_SSDO,
 		DEFFER_COMPOSITE,
-		FORWARD_SHADING
+		FORWARD_SHADING,
+		TONE_MAP
 	};
 
 	class PaintInfomation
@@ -46,5 +47,9 @@ namespace mcl {
 		std::shared_ptr<GLAbstractTexture> finalHdrTexture;
 		std::vector<std::shared_ptr<GLAbstractTexture>> bloomMipTex;
 		int bloomSampleState; //if (0,), down sample from Mip i-1 to Mip i. if (,0), up sample from Mip -i to Mip -i-1
+
+		Color3f clearColor = Color3f(0.7, 0.7, 0.8);
+		
+		Color3f emptyPrimIdColor = Color3f(1, 1, 1);
 	};
 }

@@ -41,6 +41,7 @@ const int SsdoUnitSphereSampleCnt = 4;
 const int SsdoRadiusSampleCnt = 3;
 const int SsdoTotalSampleCnt = SsdoRadiusSampleCnt * SsdoUnitSphereSampleCnt * SsdoUnitSphereSampleCnt;
 const float attRefDist = sceneExtent * SsdoSampleRadiusFactor / 1.5;
+const float SsdoSampleThresholdCos2Theta = 0.9; //采样时theta大于一个临界角度，防止深度误差
 float SsdoSampleRadius;
 vec3 totalAmbient;
 
@@ -110,8 +111,9 @@ vec3 SSDO(vec3 rand3D){
 	//calculate sample point
 	float sinPhi = sin(2*PI*rand3D.x);
 	float cosPhi = cos(2*PI*rand3D.x);
-	float sinTheta = sqrt(rand3D.y);
-	float cosTheta = sqrt(1-rand3D.y);
+	float sinTheta2 = rand3D.y*(SsdoSampleThresholdCos2Theta + 1)/2 - (SsdoSampleThresholdCos2Theta - 1)/2;
+	float sinTheta = sqrt(sinTheta2);
+	float cosTheta = sqrt(1-sinTheta2);
 	vec3 sampleVec = cosTheta * aNormal.xyz + sinTheta * (cosPhi * t + sinPhi * b);
 	vec3 samplePoint = aWorldPos.xyz + sampleVec * SsdoSampleRadius * rand3D.z;
 	

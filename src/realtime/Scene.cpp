@@ -81,7 +81,6 @@ void Scene::initializeGL()
 	directLightFbo = std::make_shared<GLColorFrameBufferObject>();
 	ssdoFbo = std::make_shared<GLColorFrameBufferObject>();
 	compositeFbo = std::make_shared<GLColorFrameBufferObject>();
-	msfbo = std::make_shared<GLMultiSampleFrameBufferObject>(sampleRate);
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
 	for (int i = 0; i < MaxBloomMipLevel; i++) {
 		bloomMipFbos[i] = std::make_shared<GLColorFrameBufferObject>();
@@ -112,7 +111,6 @@ void Scene::resizeGL(int w, int h)
 	directLightFbo->resize(h, w);
 	ssdoFbo->resize(h, w);
 	compositeFbo->resize(h, w);
-	msfbo->resize(h, w);
 	mtrfbo->resize(h, w);
 
 	int mipW = w, mipH = h;
@@ -149,10 +147,8 @@ void Scene::paintGL()
 				std::shared_ptr<CubeShadowMapPaintVisitor> smpainter = std::make_shared<CubeShadowMapPaintVisitor>(ptlight);
 				ptlight->initFbo();
 				ptlight->getFbo()->bind();
+				ptlight->getFbo()->clear(&info);
 				GLFUNC->glViewport(0, 0, ptlight->shadowMapSize().x(), ptlight->shadowMapSize().y());
-				GLFUNC->glEnable(GL_DEPTH_TEST);
-				GLFUNC->glClear(GL_DEPTH_BUFFER_BIT);
-				PaintInfomation info;
 				for (auto& prim : prims_) {
 					if(prim.first == ptlight->primitive()->id())
 						continue;
@@ -160,15 +156,13 @@ void Scene::paintGL()
 				}
 			}
 		}
-		GLFUNC->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 		GLFUNC->glViewport(0, 0, this->width(), this->height());
 		bNeedInitLight = false;
 		info.lights = lights_;
 	}
 
 	mtrfbo->bind();
-	GLFUNC->glEnable(GL_DEPTH_TEST);
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	mtrfbo->clear(&info);
 
 	info.projMat = camera->getProjMatrix();
 	info.viewMat = camera->getViewMatrix();
@@ -184,24 +178,24 @@ void Scene::paintGL()
 	info.mtrTex = mtrfbo->transferedTextureId();
 	// direct light
 	directLightFbo->bind();
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	directLightFbo->clear(&info);
 	billboard->paint(&info, deferredDirLightPainter.get());
 
 	// SSDO
 	ssdoFbo->bind();
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	ssdoFbo->clear(&info);
 	billboard->paint(&info, deferredSsdoPaintVisitor.get());
 	
 	//Composite
 	compositeFbo->bind();
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	compositeFbo->clear(&info);
 	billboard->paint(&info, Singleton<DeferredCompositePaintVisitor>::getSingleton());
 
 	//Bloom down sample
 	for (int i = 0; i < bloomMipLevel; i++) {
 		glViewport(0, 0, bloomMipFbos[i]->texture()->size().x(), bloomMipFbos[i]->texture()->size().y());
 		bloomMipFbos[i]->bind();
-		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
+		bloomMipFbos[i]->clear(&info);
 		info.bloomSampleState = i+1;
 		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
 	}
@@ -209,7 +203,7 @@ void Scene::paintGL()
 	//Bloom up sample
 	for (int i = bloomMipLevel - 1; i >= 1; i--) {
 		glViewport(0, 0, bloomMipFbos[i - 1]->texture()->size().x(), bloomMipFbos[i - 1]->texture()->size().y());
-		bloomMipFbos[i-1]->bind();
+		bloomMipFbos[i - 1]->bind();
 		info.bloomSampleState = -i-1;
 		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
 	}
@@ -230,7 +224,7 @@ void Scene::paintGL()
 
 	//toneMap
 	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GLFUNC->glDisable(GL_DEPTH_TEST);
 	billboard->paint(&info, toneMapPainter.get());
 }
 

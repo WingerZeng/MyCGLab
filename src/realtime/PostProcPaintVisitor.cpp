@@ -17,9 +17,8 @@ int mcl::ToneMapPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 {
 	GLFUNC->glDisable(GL_DEPTH_TEST);
 	ToneMapShader::ptr()->bind();
+	info->setUniformValue(ToneMapShader::ptr(), TONE_MAP);
 	tri->getVAO()->bind();
-	info->finalHdrTexture->bindToUniform("finalHdrTex", ToneMapShader::ptr());
-	info->bloomMipTex[0]->bindToUniform("bloomMip0", ToneMapShader::ptr());
 	ToneMapShader::ptr()->setUniformValue("size", QVector2D(info->width, info->height));
 	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 	return 0;

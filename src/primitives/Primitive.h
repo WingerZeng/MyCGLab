@@ -61,7 +61,6 @@ public:
 	virtual std::shared_ptr<DataNode> getMaterialNode() {
 		return nullptr;
 	}
-
 private:
 	unsigned int id_;
 	static unsigned int globalId;

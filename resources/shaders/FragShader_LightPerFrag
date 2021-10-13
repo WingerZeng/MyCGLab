@@ -4,6 +4,7 @@ layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 albedo;
 layout (location = 2) out vec3 worldPos;
 layout (location = 3) out vec3 normal;
+layout (location = 4) out vec3 primId;
 
 /* inputs */
 in vec3 aNormal;
@@ -25,15 +26,18 @@ uniform Material material;
 uniform vec4 Le;
 uniform bool selected = false;
 uniform vec3 selectedColor;
+uniform vec3 primid;
 
 void main(){
 	if(selected){
 		FragColor = vec4(selectedColor,1);
-		return;
 	}
-	FragColor += Le;
+	else{
+		FragColor += Le;
+	}
 	worldPos = aWorldPos;
 	normal = normalize(aNormal);
+	primId = primid;
 	switch(material.mtype){
 	case -1:
 		albedo = material.ourColor;

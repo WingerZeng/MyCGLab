@@ -10,17 +10,17 @@ namespace mcl {
 	inline bool compileVrtShader(QOpenGLShaderProgram& shaderProgram, const char* vs, const char* fs) {
 		bool success = shaderProgram.addShaderFromSourceCode(QOpenGLShader::Vertex, vs);
 		if (!success) {
-			qDebug() << "Mesh: shaderProgram addShaderFromSourceFile failed!" << shaderProgram.log();
+			qDebug() << shaderProgram.log();
 			return false;
 		}
 		success = shaderProgram.addShaderFromSourceCode(QOpenGLShader::Fragment, fs);
 		if (!success) {
-			qDebug() << "Mesh: shaderProgram addShaderFromSourceFile failed!" << shaderProgram.log();
+			qDebug() << shaderProgram.log();
 			return false;
 		}
 		success = shaderProgram.link();
 		if (!success) {
-			qDebug() << "Mesh: shaderProgram link failed!" << shaderProgram.log();
+			qDebug() << "shaderProgram:\n " << vs << fs << "link failed!" << shaderProgram.log();
 			return false;
 		}
 		return true;
@@ -44,7 +44,7 @@ namespace mcl {
 		}
 		success = shaderProgram.link();
 		if (!success) {
-			qDebug() << "Mesh: shaderProgram link failed!" << shaderProgram.log();
+			qDebug() << "shaderProgram:\n " << vs << gs << fs << "link failed!" << shaderProgram.log();
 			return false;
 		}
 		return true;

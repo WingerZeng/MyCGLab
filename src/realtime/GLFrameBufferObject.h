@@ -10,6 +10,8 @@ namespace mcl {
 
 		virtual void bind() = 0;
 
+		virtual void clear(PaintInfomation* info) = 0;
+
 		virtual void resize(int height, int width);
 
 		virtual std::shared_ptr<GLAbstractTexture> texture(int idx=0) = 0;
@@ -28,6 +30,8 @@ namespace mcl {
 		~GLColorFrameBufferObject();
 
 		void bind() override;
+
+		void clear(PaintInfomation* info) override;
 
 		void resize(int height, int width) override;
 
@@ -66,6 +70,8 @@ namespace mcl {
 
 		void bind() override;
 
+		void clear(PaintInfomation* info) override;
+
 		void resize(int height, int width) override;
 
 		std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
@@ -83,6 +89,8 @@ namespace mcl {
 
 		virtual void bind() override;
 
+		void clear(PaintInfomation* info) override;
+
 		virtual void resize(int height, int width) override;
 
 		std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
@@ -95,9 +103,10 @@ namespace mcl {
 			ALBEDO,
 			WORLD_POS,
 			NORMAL,
+			PRIMID,
 			DEPTH,
 		};
-		static const int nTargetType = 5;
+		static const int nTargetType = 6;
 
 		static std::array<GLuint, nTargetType> targetFromats;
 		static std::array<GLuint, nTargetType> targetBaseFromats;

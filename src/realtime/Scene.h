@@ -110,14 +110,13 @@ namespace mcl {
 		std::shared_ptr<GLColorFrameBufferObject> ssdoFbo;
 		std::shared_ptr<GLColorFrameBufferObject> compositeFbo;
 		std::shared_ptr<GLColorFrameBufferObject> bloomMipFbos[MaxBloomMipLevel];
-		std::shared_ptr<GLMultiSampleFrameBufferObject> msfbo;
 		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;
 		std::shared_ptr<PTriMesh> billboard;
 		
 
 		Bound3f sceneBound;
 
-		const int sampleRate = 8;
+		const int sampleRate = 1; //#TODO0 改变sampleRate不起作用
 
 		PaintInfomation info;
 	};

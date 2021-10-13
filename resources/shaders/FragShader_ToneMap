@@ -3,7 +3,9 @@ out vec4 FragColor;
 in vec2 texCoord;
 uniform sampler2D finalHdrTex;
 uniform sampler2D bloomMip0;
+uniform sampler2D primId;
 uniform vec2 size;
+uniform vec3 clearColor;
 const float gamma = 2.2;
 const float exposure = 2;
 //Bloom 效果缩放系数
@@ -28,7 +30,14 @@ vec3 UpSample(){
 
 void main(){
 	FragColor.a = 1;
+	if(texture(primId,texCoord).xyz == vec3(1,1,1)){
+		FragColor.rgb = clearColor;
+		return;
+	}
     vec3 hdrColor = texture(finalHdrTex,texCoord).rgb;
+
+	//#TODO0 TXAA
+
     // exposure tone mapping
     vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
 	// up sample bloom mip1

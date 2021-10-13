@@ -8,6 +8,7 @@
 #include "shaders.h"
 #include "Material.h"
 #include "GLFunctions.h"
+#include "utilities.h"
 namespace mcl{
 	//#TODO1 info可以优化为栈模式
 	int DefaultPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
@@ -219,6 +220,7 @@ namespace mcl{
 			info->hasNormal = tri->hasNormal();
 
 			info->setUniformValue(shader, DEFFER_PREPARE);
+			shader->setUniformValue("primid", QVector3D(intToRgb8(tri->id())));
 			tri->getMaterial()->prepareGL(shader);
 
 			tri->getVAO()->bind();

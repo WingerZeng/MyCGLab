@@ -5,6 +5,24 @@
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
 namespace mcl {
+	inline Vector3f intToRgb8(int i) {
+		Vector3f vec;
+		vec[0] = (i % 256) / 255.0;
+		i /= 256;
+		vec[1] = (i % 256) / 255.0;
+		i /= 256;
+		vec[2] = i / 255.0;
+		return vec;
+	}
+
+	inline int rgb8ToInt(Vector3f vec) {
+		int i;
+		i += vec[0] * 255;
+		i += vec[1] * 255 * 256;
+		i += vec[2] * 255 * 256 * 256;
+		return i;
+	}
+
 	/* Some template utilities */
 	// 类型名称转字符串
 	template <typename T>

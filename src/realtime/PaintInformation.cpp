@@ -3,6 +3,7 @@
 #include "light.h"
 #include "GLFunctions.h"
 #include "GLTexture.h"
+#include "GLFrameBufferObject.h"
 void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintStage stage)
 {
 	switch (stage)
@@ -23,10 +24,10 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		shader->setUniformValue("world2Screen", projMat * viewMat);
 		shader->setUniformValue("lightCount", GLint(lights.size()));
 		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
-		mtrTex[1]->bindToUniform("albedo", shader);
-		mtrTex[2]->bindToUniform("worldPos", shader);
-		mtrTex[3]->bindToUniform("normal", shader);
-		mtrTex[4]->bindToUniform("depth", shader);
+		mtrTex[GLMtrFrameBufferObject::ALBEDO   ]->bindToUniform("albedo", shader);
+		mtrTex[GLMtrFrameBufferObject::WORLD_POS]->bindToUniform("worldPos", shader);
+		mtrTex[GLMtrFrameBufferObject::NORMAL   ]->bindToUniform("normal", shader);
+		mtrTex[GLMtrFrameBufferObject::DEPTH    ]->bindToUniform("depth", shader);
 		for (int j = 0; j < lights.size(); j++) {
 			lights[j]->bind(shader, j, this->activeTextrueCnt);
 		}
@@ -35,17 +36,18 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		shader->setUniformValue("world2Screen", projMat * viewMat);
 		shader->setUniformValue("lightCount", GLint(lights.size()));
 		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
-		mtrTex[1]->bindToUniform("albedo", shader);
-		mtrTex[2]->bindToUniform("worldPos", shader);
-		mtrTex[3]->bindToUniform("normal", shader);
-		mtrTex[4]->bindToUniform("depth", shader);
+		mtrTex[GLMtrFrameBufferObject::ALBEDO]->bindToUniform("albedo", shader);
+		mtrTex[GLMtrFrameBufferObject::WORLD_POS]->bindToUniform("worldPos", shader);
+		mtrTex[GLMtrFrameBufferObject::NORMAL]->bindToUniform("normal", shader);
+		mtrTex[GLMtrFrameBufferObject::DEPTH]->bindToUniform("depth", shader);
 		directLightTexture->bindToUniform("directLightTexture", shader);
 		for (int j = 0; j < lights.size(); j++) {
 			lights[j]->bind(shader, j, this->activeTextrueCnt);
 		}
 		break;
 	case mcl::DEFFER_COMPOSITE:
-		mtrTex[0]->bindToUniform("fragColor", shader);
+		mtrTex[GLMtrFrameBufferObject::COLOR]->bindToUniform("fragColor", shader);
+		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("primId", shader);
 		directLightTexture->bindToUniform("directLightTexture", shader);
 		ssdoTexture->bindToUniform("ssdoTexture", shader);
 		break;
@@ -54,6 +56,11 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		shader->setUniformValue("u_thickness", GLfloat(lineWidth));
 		shader->setUniformValue("pointSize", GLfloat(pointSize));
 		break;
+	case mcl::TONE_MAP:
+		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("primId", shader);
+		finalHdrTexture->bindToUniform("finalHdrTex", shader);
+		bloomMipTex[0]->bindToUniform("bloomMip0", shader);
+		shader->setUniformValue("clearColor", QVector3D(clearColor));
 	default:
 		break;
 	}
