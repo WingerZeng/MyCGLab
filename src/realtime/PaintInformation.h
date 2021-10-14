@@ -22,7 +22,8 @@ namespace mcl {
 		DEFFER_SSDO,
 		DEFFER_COMPOSITE,
 		FORWARD_SHADING,
-		TONE_MAP
+		TONE_MAP,
+		FXAA
 	};
 
 	class PaintInfomation
@@ -45,6 +46,7 @@ namespace mcl {
 		std::shared_ptr<GLAbstractTexture> directLightTexture; //vec4(Œ¥º”“ı”∞µƒdirectLightColor, shadowRate)
 		std::shared_ptr<GLAbstractTexture> ssdoTexture;
 		std::shared_ptr<GLAbstractTexture> finalHdrTexture;
+		std::shared_ptr<GLAbstractTexture> ldrTexture;
 		std::vector<std::shared_ptr<GLAbstractTexture>> bloomMipTex;
 		int bloomSampleState; //if (0,), down sample from Mip i-1 to Mip i. if (,0), up sample from Mip -i to Mip -i-1
 

@@ -36,8 +36,6 @@ void main(){
 	}
     vec3 hdrColor = texture(finalHdrTex,texCoord).rgb;
 
-	//#TODO0 TXAA
-
     // exposure tone mapping
     vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
 	// up sample bloom mip1

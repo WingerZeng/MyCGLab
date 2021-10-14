@@ -61,6 +61,9 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		finalHdrTexture->bindToUniform("finalHdrTex", shader);
 		bloomMipTex[0]->bindToUniform("bloomMip0", shader);
 		shader->setUniformValue("clearColor", QVector3D(clearColor));
+	case mcl::FXAA:
+		ldrTexture->bindToUniform("ldrTexture", shader);
+		shader->setUniformValue("viewportSize", width, height);
 	default:
 		break;
 	}

@@ -128,6 +128,8 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(FragShader_ToneMap);
 
+	DEF_SHADER_SOURCE(FragShader_Fxaa);
+
 	DEF_SHADER_SOURCE(FragShader_BloomFilter);
 
 	DEF_SHADER_SOURCE(FragShader_DeferredDirectLight);
@@ -159,6 +161,7 @@ namespace mcl {
 	using DeferredDirectLightShader = Shader<VertexShader_PostProc, FragShader_DeferredDirectLight>;
 	using DeferredSsdoShader = Shader<VertexShader_PostProc, FragShader_DeferredSSDO>;
 	using DeferredCompositeShader = Shader<VertexShader_PostProc, FragShader_DeferredComposite>;
+	using FxaaShader = Shader<VertexShader_PostProc, FragShader_Fxaa>;
 	int initAllShaders();
 }
 

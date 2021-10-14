@@ -187,11 +187,13 @@ namespace mcl {
 	GLMtrFrameBufferObject::GLMtrFrameBufferObject(int nsample)
 		:nsample(nsample)
 	{
-		GLFUNC->glGenFramebuffers(1, &interFbo);
+		if (nsample > 1)
+			GLFUNC->glGenFramebuffers(1, &interFbo);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 		for (int i = 0; i < nTargetType; i++) {
-			targetTex.emplace_back(std::make_shared<GLTextureMultiSample>(targetFromats[i], nsample));
+			if(nsample > 1)
+				targetTex.emplace_back(std::make_shared<GLTextureMultiSample>(targetFromats[i], nsample));
 			outputTex.emplace_back(std::make_shared<GLTexture2D>(targetFromats[i], targetBaseFromats[i], targetUnitFromats[i]));
 			outputTex[i]->setFilter(GL_NEAREST, GL_NEAREST);
 			outputTex[i]->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
@@ -202,7 +204,8 @@ namespace mcl {
 
 	GLMtrFrameBufferObject::~GLMtrFrameBufferObject()
 	{
-		GLFUNC->glDeleteFramebuffers(1, &interFbo);
+		if (nsample > 1)
+			GLFUNC->glDeleteFramebuffers(1, &interFbo);
 	}
 
 	void GLMtrFrameBufferObject::bind()
@@ -243,31 +246,38 @@ namespace mcl {
 	{
 		GLFrameBufferObject::resize(height, width);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		for (int i = 0; i < nTargetType-1; i++) {
-			targetTex[i]->resize(width, height);
-			targetTex[i]->bindToFbo(fbo, GL_COLOR_ATTACHMENT0 + i);
-		}
-		targetTex[DEPTH]->resize(width, height);
-		targetTex[DEPTH]->bindToFbo(fbo, GL_DEPTH_ATTACHMENT);
+		if (nsample > 1) {
+			for (int i = 0; i < nTargetType - 1; i++) {
+				targetTex[i]->resize(width, height);
+				targetTex[i]->bindToFbo(fbo, GL_COLOR_ATTACHMENT0 + i);
+			}
+			targetTex[DEPTH]->resize(width, height);
+			targetTex[DEPTH]->bindToFbo(fbo, GL_DEPTH_ATTACHMENT);
 
-		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, interFbo);
+			GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, interFbo);
+		}
+		GLuint outputfbo = nsample == 1 ? fbo : interFbo;
 		for (int i = 0; i < nTargetType - 1; i++) {
 			outputTex[i]->resize(width, height);
-			outputTex[i]->bindToFbo(interFbo, GL_COLOR_ATTACHMENT0 + i);
+			outputTex[i]->bindToFbo(outputfbo, GL_COLOR_ATTACHMENT0 + i);
 		}
 		outputTex[DEPTH]->resize(width, height);
-		outputTex[DEPTH]->bindToFbo(interFbo, GL_DEPTH_ATTACHMENT);
+		outputTex[DEPTH]->bindToFbo(outputfbo, GL_DEPTH_ATTACHMENT);
 
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	std::shared_ptr<mcl::GLAbstractTexture> GLMtrFrameBufferObject::texture(int idx /*= 0*/)
 	{
+		if (nsample == 1)
+			return outputTex[idx];
 		return targetTex[idx];
 	}
 
 	std::vector<std::shared_ptr<GLAbstractTexture>> GLMtrFrameBufferObject::transferedTextureId()
 	{
+		if (nsample == 1)
+			return std::vector<std::shared_ptr<GLAbstractTexture>>(outputTex.begin(), outputTex.end());
 		GLFUNC->glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 		GLFUNC->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, interFbo);
 

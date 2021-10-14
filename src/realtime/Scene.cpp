@@ -66,7 +66,6 @@ void Scene::initializeGL()
 	deferredDirLightPainter = std::make_shared<DeferredDirectLightPaintVisitor>();
 	deferredSsdoPaintVisitor = std::make_shared<DeferredSsdoPaintVisitor>();
 	forwardPainter = std::make_shared<ForwardPaintVisitor>();
-	toneMapPainter = std::make_shared<ToneMapPaintVisitor>();
 
 	//相机初始化
 	camera->initialize(width(), height());
@@ -81,6 +80,7 @@ void Scene::initializeGL()
 	directLightFbo = std::make_shared<GLColorFrameBufferObject>();
 	ssdoFbo = std::make_shared<GLColorFrameBufferObject>();
 	compositeFbo = std::make_shared<GLColorFrameBufferObject>();
+	toneMapFbo = std::make_shared<GLColorFrameBufferObject>();
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
 	for (int i = 0; i < MaxBloomMipLevel; i++) {
 		bloomMipFbos[i] = std::make_shared<GLColorFrameBufferObject>();
@@ -96,6 +96,7 @@ void Scene::initializeGL()
 	info.pointSize = 8.0f;
 	info.ssdoTexture = ssdoFbo->texture();
 	info.finalHdrTexture = compositeFbo->texture();
+	info.ldrTexture = toneMapFbo->texture();
 	info.directLightTexture = directLightFbo->texture();
 	for (int i=0;i<MaxBloomMipLevel;i++){
 		info.bloomMipTex.push_back(bloomMipFbos[i]->texture());
@@ -111,6 +112,7 @@ void Scene::resizeGL(int w, int h)
 	directLightFbo->resize(h, w);
 	ssdoFbo->resize(h, w);
 	compositeFbo->resize(h, w);
+	toneMapFbo->resize(h, w);
 	mtrfbo->resize(h, w);
 
 	int mipW = w, mipH = h;
@@ -223,9 +225,13 @@ void Scene::paintGL()
 	//axis.paint();
 
 	//toneMap
+	toneMapFbo->bind();
+	toneMapFbo->clear(&info);
+	billboard->paint(&info, Singleton<ToneMapPaintVisitor>::getSingleton());
+
 	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
 	GLFUNC->glDisable(GL_DEPTH_TEST);
-	billboard->paint(&info, toneMapPainter.get());
+	billboard->paint(&info, Singleton<FxaaPaintVisitor>::getSingleton());
 }
 
 void Scene::mouseMoveEvent(QMouseEvent *ev)

@@ -80,3 +80,13 @@ int mcl::DeferredCompositePaintVisitor::paintTris(PaintInfomation* info, PTriMes
 	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 	return 0;
 }
+
+int mcl::FxaaPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
+{
+	GLFUNC->glDisable(GL_DEPTH_TEST);
+	FxaaShader::ptr()->bind();
+	info->setUniformValue(FxaaShader::ptr(), FXAA);
+	tri->getVAO()->bind();
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
+	return 0;
+}

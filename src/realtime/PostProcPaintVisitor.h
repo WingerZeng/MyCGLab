@@ -38,5 +38,11 @@ namespace mcl {
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
+
+	class FxaaPaintVisitor: public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
 }
 
