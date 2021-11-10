@@ -1,0 +1,224 @@
+#version 430 core
+out vec3 FragColor;
+noperspective in vec2 texCoord;
+
+uniform sampler2D gFinalImage;
+uniform sampler2D gAlbedo;
+uniform sampler2D gSpecular;
+uniform sampler2D gWorldNormal;
+uniform sampler2D gWorldPos;
+uniform sampler2D gDepth;
+
+uniform vec2 viewportSize;
+uniform float sceneExtent;
+uniform mat4 view;
+uniform mat4 invView;
+uniform mat4 project;
+uniform mat4 invProject;
+uniform vec3 bgColor;
+
+const vec2 inverseScreenSize = 1/viewportSize;
+const int SampleCnt = 8;
+const float Samplntv = 1.0 / SampleCnt;
+const float Scale = 1376.453;
+const float minRayStep = sceneExtent / 100;
+const float firstStepScale = 0.003;
+const float StepGrowRate = 1.1;
+const int maxStepCnt = 50;
+const int numBinarySearchSteps = 5;
+const float edgeFadeRate = 0.5;
+const float DepthOffset = sceneExtent / 400;
+
+#define BLINN_PHONG 1.0
+#define PI 3.1415926
+
+vec3 BinarySearch(vec3 dir, inout vec3 hitCoord, inout float deltaDepth);
+vec3 RayMarch(vec3 dir, inout vec3 hitCoord, out float deltaDepth, out bool ishit);
+vec2 random2(vec3 vec, int i, int j);
+vec3 BrdfSample(vec2 rand2D, vec3 rayOut, vec3 normal, vec3 t, vec3 b, vec4 albedo, vec4 specular, out vec3 rayIn);
+
+void main(){
+	vec4 finalFragColor = texture(gFinalImage, texCoord);
+	FragColor = finalFragColor.rgb;
+
+	vec4 albedo = texture(gAlbedo, texCoord);
+	vec4 specular = texture(gSpecular, texCoord);
+
+	// 判断材质类型
+	if(albedo.a == BLINN_PHONG){  //目前只支持BlinnPhong
+		if(length(specular.rgb) <= 1e-6)
+			return;
+	}
+	else{
+		return;
+	}
+
+	// 准备法向和着色点坐标
+	vec3 worldNormal = normalize(texture(gWorldNormal, texCoord).xyz);
+	// 在level2的Mipmap上采样position，加速光线求交
+	vec3 worldPosition = textureLod(gWorldPos, texCoord, 1.0).xyz;
+	vec3 viewNormal = normalize((transpose(invView) * vec4(worldNormal,0)).xyz);
+	vec3 viewPosition = (view * vec4(worldPosition,1)).xyz;
+
+	// 求切向和副切向
+	int pivotAxis;
+	if(abs(viewNormal.x) < abs(viewNormal.y) && abs(viewNormal.x) < abs(viewNormal.z))
+		pivotAxis = 0;
+	else if(abs(viewNormal.y) < abs(viewNormal.z))
+		pivotAxis = 1;
+	else
+		pivotAxis = 2;
+	vec3 helpvec = vec3(0);
+	helpvec[pivotAxis] = 1;
+	vec3 t = cross(helpvec, viewNormal.xyz);
+	vec3 b = cross(viewNormal.xyz, t);
+	t = normalize(t);
+	b = normalize(b);
+
+	// 样本遍历
+	vec3 reflectResult = vec3(0);
+	for(int i=0;i<SampleCnt;i++){
+		for(int j=0;j<SampleCnt;j++){
+			// Stratified Jitter
+			vec2 rand2d = Samplntv * (vec2(i,j) + random2(worldPosition, i, j));
+			vec3 viewReflect;
+			// 重要性采样Brdf
+			vec3 brdf = BrdfSample(rand2d, viewPosition, viewNormal, t, b, albedo, specular, viewReflect);
+			// 屏幕空间光线求交
+			vec3 hitPos = viewPosition;
+			float deltaDepth;
+			bool ishit;
+			vec3 itscCoords = RayMarch(viewReflect * max(minRayStep, -viewPosition.z), hitPos, deltaDepth, ishit);
+			// 计算颜色
+			vec3 hitColor;
+			float edgeFadeFactor;
+			if(!ishit){
+				// 未找到交点，返回背景色
+				hitColor = bgColor;
+				vec2 edgeFactor = clamp(smoothstep(1.0, 0.0, abs(vec2(0.5,0.5) - itscCoords.xy)), 0, 1);
+				edgeFadeFactor = clamp(pow(edgeFactor.x * edgeFactor.y, edgeFadeRate), 0.0, 1.0);
+			}
+			else{
+				hitColor = textureLod(gFinalImage, itscCoords.xy, 0).rgb;
+				// 根据反射光线交点与屏幕边界的距离，对边缘进行淡化处理
+				// factor == 1 说明在画面中心, factor == 0 说明落在边界之外
+				vec2 edgeFactor = clamp(smoothstep(0.5, 0.0, abs(vec2(0.5,0.5) - itscCoords.xy)), 0, 1);
+				edgeFadeFactor = clamp(pow(edgeFactor.x * edgeFactor.y, edgeFadeRate), 0.0, 1.0);
+			}
+			// 最终反射值
+			reflectResult += hitColor * edgeFadeFactor * brdf;
+		}
+	}
+	reflectResult /= SampleCnt * SampleCnt;
+	FragColor += reflectResult;
+}
+
+vec2 random2(vec3 vec, int i, int j){
+    vec2 ret = vec2(dot(vec.yxz,vec3(127.1,-311.7,123.7)),
+					dot(vec.zyx,vec3(269.5,-183.3,812.321)));
+	ret = fract(sin(ret*Scale)*Scale*vec2(i+1,j+1));
+    return ret;
+}
+
+// 光线求交, 返回交点坐标，其中xy在屏幕空间下，z在摄像机空间下，hitCoord返回摄像机空间交点坐标
+vec3 RayMarch(vec3 dir, inout vec3 hitCoord, out float deltaDepth, out bool ishit){
+
+	// 计算初始步进向量
+	dir *= firstStepScale;
+
+	float depth;
+	vec4 projectedCoord;
+	
+    for(int i = 0; i < maxStepCnt; i++)
+    {
+		// 光线步进
+		hitCoord += dir;
+
+		// 将光线点投影到屏幕空间
+		projectedCoord = project * vec4(hitCoord, 1.0);
+		projectedCoord.xy /= projectedCoord.w;
+		projectedCoord.xy = (projectedCoord.xy + 1) / 2;
+		if(hitCoord.z >= 0 || projectedCoord.x <= 0 || projectedCoord.y <= 0 || projectedCoord.x >= 1 || projectedCoord.y >= 1)
+			break;
+
+		// 获取光线点在屏幕空间上对应点的世界坐标
+		vec3 hitWorld = textureLod(gWorldPos, projectedCoord.xy, 1.0).xyz;
+		// 转换到摄像机坐标，得到该点的深度值（实际上是深度值的负数）
+		depth = (view * vec4(hitWorld,1)).z;
+
+		float deltaDepth = depth - hitCoord.z;
+		// 投影点的深度值更小，说明发生相交
+		if(deltaDepth >= DepthOffset){
+			// 检测光线方向和法向是否同向，同向说明光线击中的是背面，不能判定为相交
+			vec3 hitWNormal = textureLod(gWorldNormal, projectedCoord.xy, 1.0).xyz;
+			vec3 hitVNormal = (transpose(invView) * vec4(hitWNormal,0)).xyz;
+			if(dot(hitVNormal,dir) < 0){
+				// 不同向，说明相交
+				vec3 Result;
+				//  二分法求精确交点
+				Result =  BinarySearch(dir, hitCoord, deltaDepth);
+				ishit = true;
+				return Result;
+			}
+		}
+
+		dir *= StepGrowRate;
+	}
+	ishit = false;
+	return vec3(0);
+}
+
+// BRDF重要性采样，rayOut方向指向着色点；返回rayIn，方向远离着色点；返回值为BRDF值，并包含pdf项和cos项。
+vec3 BrdfSample(vec2 rand2D, vec3 rayOut, vec3 normal, vec3 t, vec3 b, vec4 albedo, vec4 specular, out vec3 rayIn){
+	vec3 ret;
+	if(albedo.a == BLINN_PHONG){
+		float ns = specular.a;
+		float cosPhiH = cos(rand2D.x * 2 * PI);
+		float sinPhiH = sqrt(1 - cosPhiH * cosPhiH) * (rand2D.x>0.5?1:-1);
+		float cosThetaH = pow(rand2D.y, 1.0/(ns+1));
+		float sinThetaH = sqrt(1 - cosThetaH * cosThetaH);
+		vec3 halfVec = normal * cosThetaH + t * cosPhiH * sinThetaH + b * sinPhiH * sinThetaH;
+		rayIn = normalize(reflect(rayOut, halfVec));
+		ret = specular.rgb;
+		if(dot(rayIn, normal) < 0){
+			ret = vec3(0);
+		}
+	}
+	return ret;
+}
+
+// 二分法求光线交点
+vec3 BinarySearch(vec3 dir, inout vec3 hitCoord, inout float deltaDepth){
+    float depth;
+    vec4 projectedCoord;
+	// 从两次步进光线点的中点开始二分
+	dir /= 2;
+	hitCoord -= dir;
+
+	for(int i=0;i<numBinarySearchSteps; i++){
+		// 将光线点投影到屏幕空间
+		projectedCoord = project * vec4(hitCoord, 1.0);
+		projectedCoord.xy /= projectedCoord.w;
+		projectedCoord.xy = (projectedCoord.xy + 1) / 2;
+
+		// 获取光线点在屏幕空间上对应点的世界坐标
+		vec3 hitWorld = textureLod(gWorldPos, projectedCoord.xy, 1.0).xyz;
+		// 转换到摄像机坐标，得到该点的深度值（实际上是深度值的负数）
+		depth = (view * vec4(hitWorld,1)).z;
+
+		// 二分法
+		dir /= 2;
+		deltaDepth = depth - hitCoord.z;
+		if(deltaDepth >= DepthOffset)
+			hitCoord -= dir;
+		else if(deltaDepth < DepthOffset)
+			hitCoord += dir;
+	}
+	projectedCoord = project * vec4(hitCoord, 1.0);
+	projectedCoord.xy /= projectedCoord.w;
+	projectedCoord.xy = (projectedCoord.xy + 1) / 2;
+	vec3 hitWorld = textureLod(gWorldPos, projectedCoord.xy, 1.0).xyz;
+	depth = (view * vec4(hitWorld,1)).z;
+
+	return vec3(projectedCoord.xy, depth);
+}

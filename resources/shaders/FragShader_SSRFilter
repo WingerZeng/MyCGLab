@@ -1,0 +1,48 @@
+#version 430 core
+out vec4 FragColor;
+noperspective in vec2 texCoord;
+
+//uniform textures
+uniform sampler2D gDirectLightImage;
+uniform sampler2D gSsrImage;
+uniform sampler2D gPrimId;
+uniform sampler2D gWorldNormal;
+
+const float NormalTreshold = 0.5;
+// Gaussin Kernel
+const int SsrBlurSampleCnt = 25;
+const vec2 SsrBlurOffset[SsrBlurSampleCnt] = {
+	{-2, 2},{-1, 2},{0, 2},{1, 2},{2, 2},
+	{-2, 1},{-1, 1},{0, 1},{1, 1},{2, 1},
+	{-2, 0},{-1, 0},{0, 0},{1, 0},{2, 0},
+	{-2,-1},{-1,-1},{0,-1},{1,-1},{2,-1},
+	{-2,-2},{-1,-2},{0,-2},{1,-2},{2,-2},
+};
+const float SsrBlurWeights[SsrBlurSampleCnt] = {
+	36, 90, 120, 90, 36,
+	90, 225,300, 225,90,
+	120,300,400, 300,120,
+	90, 225,300, 225,90,
+	36, 90, 120, 90, 36,
+};
+
+void main(){
+	// blur ssr
+	FragColor = vec4(0,0,0,1);
+	vec2 texSize = 1/vec2(textureSize(gDirectLightImage,0));
+	float weightSum = 0;
+	vec3 id = texture(gPrimId, texCoord).xyz;
+	vec3 normal = texture(gWorldNormal, texCoord).xyz;
+	for(int i=0;i<25;i++){
+		vec2 sampleCoord = texCoord + SsrBlurOffset[i]*texSize;
+		vec3 sampleId = texture(gPrimId,sampleCoord).xyz;
+		vec3 sampleNormal = texture(gWorldNormal,sampleCoord).xyz;
+		if(sampleId == id && dot(normalize(sampleNormal),normalize(normal)) > NormalTreshold)
+		{
+			FragColor += texture(gSsrImage,sampleCoord)*SsrBlurWeights[i];
+			weightSum += SsrBlurWeights[i];
+		}
+	}
+	FragColor /= weightSum;
+	FragColor += texture(gDirectLightImage, texCoord);
+}

@@ -44,5 +44,11 @@ namespace mcl {
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
+
+	class SsrPaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
 }
 

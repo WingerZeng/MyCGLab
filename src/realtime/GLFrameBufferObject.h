@@ -100,13 +100,14 @@ namespace mcl {
 		enum TargetType
 		{
 			COLOR = 0,
-			ALBEDO,
+			ALBEDO,	//ALBEDO的A通道存材质序号
+			SPECULAR,
 			WORLD_POS,
 			NORMAL,
 			PRIMID,
 			DEPTH,
 		};
-		static const int nTargetType = 6;
+		static const int nTargetType = 7;
 
 		static std::array<GLuint, nTargetType> targetFromats;
 		static std::array<GLuint, nTargetType> targetBaseFromats;

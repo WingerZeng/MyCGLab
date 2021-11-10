@@ -1,6 +1,6 @@
 #version 430 core
 out vec4 FragColor;
-in vec2 texCoord;
+noperspective in vec2 texCoord;
 
 uniform sampler2D albedo;
 uniform sampler2D worldPos;
@@ -142,6 +142,7 @@ vec3 SSDO(vec3 rand3D){
 		//#TODO 未遮蔽项用之前渲染的FragColor作为Li，是否要加距离衰减还待考量
 		float distAtt = samplePointDist / attRefDist;
 		distAtt = 1/(1+distAtt*distAtt);
+		// 计算SSDO时采用直接光为输入，不考虑光源，因为光源的影响已经计算在直接光中
 		return texture(directLightTexture, sampleTexCoord).xyz * dot(sampleNormal, normalize(samplePointVec)) * distAtt;
 	}
 	else{

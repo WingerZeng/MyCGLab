@@ -4,6 +4,10 @@
 #include "GLFunctions.h"
 #include "GLTexture.h"
 #include "GLFrameBufferObject.h"
+//#TEST
+#include "MainWindow.h"
+#include "Scene.h"
+
 void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintStage stage)
 {
 	switch (stage)
@@ -51,19 +55,36 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		directLightTexture->bindToUniform("directLightTexture", shader);
 		ssdoTexture->bindToUniform("ssdoTexture", shader);
 		break;
-	case mcl::FORWARD_SHADING:
-		shader->setUniformValue("u_viewportSize", width, height);
-		shader->setUniformValue("u_thickness", GLfloat(lineWidth));
-		shader->setUniformValue("pointSize", GLfloat(pointSize));
+	case DEFFER_SSR:
+		lightCompositedTexture->bindToUniform("gFinalImage", shader);
+		mtrTex[GLMtrFrameBufferObject::ALBEDO]->bindToUniform("gAlbedo", shader);
+		mtrTex[GLMtrFrameBufferObject::SPECULAR]->bindToUniform("gSpecular", shader);
+		mtrTex[GLMtrFrameBufferObject::NORMAL]->bindToUniform("gWorldNormal", shader);
+		mtrTex[GLMtrFrameBufferObject::WORLD_POS]->bindToUniform("gWorldPos", shader);
+		mtrTex[GLMtrFrameBufferObject::DEPTH]->bindToUniform("gDepth", shader);
+		shader->setUniformValue("viewportSize", width, height);
+		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
+		shader->setUniformValue("view", viewMat);
+		shader->setUniformValue("invView", viewMat.inverted());
+		shader->setUniformValue("project", projMat);
+		shader->setUniformValue("invProject", projMat.inverted());
+		shader->setUniformValue("bgColor", QVector3D(clearColor));
 		break;
 	case mcl::TONE_MAP:
 		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("primId", shader);
 		finalHdrTexture->bindToUniform("finalHdrTex", shader);
 		bloomMipTex[0]->bindToUniform("bloomMip0", shader);
 		shader->setUniformValue("clearColor", QVector3D(clearColor));
+		break;
 	case mcl::FXAA:
-		ldrTexture->bindToUniform("ldrTexture", shader);
+		finalLdrTexture->bindToUniform("ldrTexture", shader);
 		shader->setUniformValue("viewportSize", width, height);
+		break;
+	case mcl::FORWARD_SHADING:
+		shader->setUniformValue("u_viewportSize", width, height);
+		shader->setUniformValue("u_thickness", GLfloat(lineWidth));
+		shader->setUniformValue("pointSize", GLfloat(pointSize));
+		break;
 	default:
 		break;
 	}

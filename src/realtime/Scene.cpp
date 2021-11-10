@@ -62,10 +62,6 @@ void Scene::initializeGL()
 
 	GLFUNC->glClearColor(0.7f, 0.7f, 0.8f, 1.0f);
 	GLFUNC->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	mtrPainter = std::make_shared<DeferredMtrPaintVisitor>();
-	deferredDirLightPainter = std::make_shared<DeferredDirectLightPaintVisitor>();
-	deferredSsdoPaintVisitor = std::make_shared<DeferredSsdoPaintVisitor>();
-	forwardPainter = std::make_shared<ForwardPaintVisitor>();
 
 	//相机初始化
 	camera->initialize(width(), height());
@@ -77,10 +73,13 @@ void Scene::initializeGL()
 
 	billboard = PTriMesh::createBillBoard();
 	billboard->initAll();
-	directLightFbo = std::make_shared<GLColorFrameBufferObject>();
+	pingpongFbo[0] = std::make_shared<GLColorFrameBufferObject>();
+	pingpongFbo[1] = std::make_shared<GLColorFrameBufferObject>();
+	directLightFbo = pingpongFbo[0];
 	ssdoFbo = std::make_shared<GLColorFrameBufferObject>();
-	compositeFbo = std::make_shared<GLColorFrameBufferObject>();
-	toneMapFbo = std::make_shared<GLColorFrameBufferObject>();
+	compositeFbo = pingpongFbo[1];
+	ssrFbo = pingpongFbo[0];
+	toneMapFbo = pingpongFbo[1];
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
 	for (int i = 0; i < MaxBloomMipLevel; i++) {
 		bloomMipFbos[i] = std::make_shared<GLColorFrameBufferObject>();
@@ -94,10 +93,11 @@ void Scene::initializeGL()
 	//init paint info
 	info.lineWidth = 1.5f;
 	info.pointSize = 8.0f;
-	info.ssdoTexture = ssdoFbo->texture();
-	info.finalHdrTexture = compositeFbo->texture();
-	info.ldrTexture = toneMapFbo->texture();
 	info.directLightTexture = directLightFbo->texture();
+	info.ssdoTexture = ssdoFbo->texture();
+	info.lightCompositedTexture = compositeFbo->texture();
+	info.finalHdrTexture = ssrFbo->texture();
+	info.finalLdrTexture = toneMapFbo->texture();
 	for (int i=0;i<MaxBloomMipLevel;i++){
 		info.bloomMipTex.push_back(bloomMipFbos[i]->texture());
 	}
@@ -109,10 +109,9 @@ void Scene::resizeGL(int w, int h)
 {
 	GLFUNC->glViewport(0, 0, w, h);
 	camera->initialize(w, h);
-	directLightFbo->resize(h, w);
+	pingpongFbo[0]->resize(h, w);
+	pingpongFbo[1]->resize(h, w);
 	ssdoFbo->resize(h, w);
-	compositeFbo->resize(h, w);
-	toneMapFbo->resize(h, w);
 	mtrfbo->resize(h, w);
 
 	int mipW = w, mipH = h;
@@ -137,9 +136,6 @@ void Scene::paintGL()
 	if (!Singleton<GlobalInfo>::getSingleton()->shaderReady)
 		return;
 	doPrimAdd();
-
-	//#TEST
-	debugOpenGL();
 
 	//Prepare shadow map
 	if (bNeedInitLight) {
@@ -173,7 +169,7 @@ void Scene::paintGL()
 	else info.fillmode = FILL;
 
 	for (auto& prim : prims_) {
-		prim.second->paint(&info, mtrPainter.get());
+		prim.second->paint(&info, Singleton<DeferredMtrPaintVisitor>::getSingleton());
 	}
 
 	// Deferred Shading
@@ -181,17 +177,22 @@ void Scene::paintGL()
 	// direct light
 	directLightFbo->bind();
 	directLightFbo->clear(&info);
-	billboard->paint(&info, deferredDirLightPainter.get());
+	billboard->paint(&info, Singleton<DeferredDirectLightPaintVisitor>::getSingleton());
 
 	// SSDO
 	ssdoFbo->bind();
 	ssdoFbo->clear(&info);
-	billboard->paint(&info, deferredSsdoPaintVisitor.get());
-	
+	billboard->paint(&info, Singleton<DeferredSsdoPaintVisitor>::getSingleton());
+
 	//Composite
 	compositeFbo->bind();
 	compositeFbo->clear(&info);
 	billboard->paint(&info, Singleton<DeferredCompositePaintVisitor>::getSingleton());
+
+	//SSR
+	ssrFbo->bind();
+	ssrFbo->clear(&info);
+	billboard->paint(&info, Singleton<SsrPaintVisitor>::getSingleton());
 
 	//Bloom down sample
 	for (int i = 0; i < bloomMipLevel; i++) {

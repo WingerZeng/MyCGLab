@@ -21,9 +21,10 @@ namespace mcl {
 		DEFFER_DIRECT_LIGHT,
 		DEFFER_SSDO,
 		DEFFER_COMPOSITE,
-		FORWARD_SHADING,
+		DEFFER_SSR,
 		TONE_MAP,
-		FXAA
+		FXAA,
+		FORWARD_SHADING,
 	};
 
 	class PaintInfomation
@@ -33,8 +34,8 @@ namespace mcl {
 		std::vector<std::shared_ptr<Light>> lights;
 		FillMode fillmode;
 		double lineWidth;
-		double pointSize;
-		double width,height;
+		float pointSize;
+		float width, height;
 		bool selected = false;
 		bool hasNormal = false;
 		Color3f selectedColor = Color3f(1,0,0);
@@ -45,8 +46,9 @@ namespace mcl {
 		std::vector<std::shared_ptr<GLAbstractTexture>> mtrTex;
 		std::shared_ptr<GLAbstractTexture> directLightTexture; //vec4(Œ¥º”“ı”∞µƒdirectLightColor, shadowRate)
 		std::shared_ptr<GLAbstractTexture> ssdoTexture;
+		std::shared_ptr<GLAbstractTexture> lightCompositedTexture;
 		std::shared_ptr<GLAbstractTexture> finalHdrTexture;
-		std::shared_ptr<GLAbstractTexture> ldrTexture;
+		std::shared_ptr<GLAbstractTexture> finalLdrTexture;
 		std::vector<std::shared_ptr<GLAbstractTexture>> bloomMipTex;
 		int bloomSampleState; //if (0,), down sample from Mip i-1 to Mip i. if (,0), up sample from Mip -i to Mip -i-1
 

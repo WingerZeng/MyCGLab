@@ -1,10 +1,11 @@
 #version 430 core
 /* outputs */
-layout (location = 0) out vec4 FragColor;
+layout (location = 0) out vec3 FragColor;
 layout (location = 1) out vec4 albedo;
-layout (location = 2) out vec3 worldPos;
-layout (location = 3) out vec3 normal;
-layout (location = 4) out vec3 primId;
+layout (location = 2) out vec4 specular;
+layout (location = 3) out vec3 worldPos;
+layout (location = 4) out vec3 normal;
+layout (location = 5) out vec3 primId;
 
 /* inputs */
 in vec3 aNormal;
@@ -30,23 +31,30 @@ uniform vec3 primid;
 
 void main(){
 	if(selected){
-		FragColor = vec4(selectedColor,1);
+		FragColor = selectedColor;
 	}
 	else{
-		FragColor += Le;
+		FragColor += Le.rgb;
 	}
 	worldPos = aWorldPos;
 	normal = normalize(aNormal);
 	primId = primid;
 	switch(material.mtype){
 	case -1:
-		albedo = material.ourColor;
+		albedo.rgb = material.ourColor.rgb;
+		albedo.a = 0;
+		specular.rgba = vec4(0);
 		break;
 	case 0:
-		albedo = texture(material.kd, aUv);
+		albedo.rgb = texture(material.kd, aUv).rgb;
+		albedo.a = 0;
+		specular.rgba = vec4(0);
 		break;
 	case 1:
-		albedo = texture(material.kd, aUv);
+		albedo.rgb = texture(material.kd, aUv).rgb;
+		albedo.a = 1;
+		specular.rgb = texture(material.ks, aUv).rgb;
+		specular.a = texture(material.ns, aUv).r;
 		break;
 	}
 	return;

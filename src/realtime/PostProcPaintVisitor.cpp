@@ -90,3 +90,13 @@ int mcl::FxaaPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
 	return 0;
 }
+
+int mcl::SsrPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
+{
+	GLFUNC->glDisable(GL_DEPTH_TEST);
+	SsrShader::ptr()->bind();
+	info->setUniformValue(SsrShader::ptr(), DEFFER_SSR);
+	tri->getVAO()->bind();
+	GLFUNC->glDrawArrays(GL_TRIANGLES, 0, tri->getTriNumer() * 3);
+	return 0;
+}

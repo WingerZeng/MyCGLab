@@ -16,6 +16,7 @@ namespace mcl{
 		BloomFilterShader::clear();
 		DeferredCompositeShader::clear();
 		FxaaShader::clear();
+		SsrShader::clear();
 		if (CommonShader::ptr() &&
 			LightShader::ptr() &&
 			LineShader::ptr() &&
@@ -27,7 +28,8 @@ namespace mcl{
 			DeferredSsdoShader::ptr() &&
 			BloomFilterShader::ptr() &&
 			DeferredCompositeShader::ptr() &&
-			FxaaShader::ptr()) {
+			FxaaShader::ptr() && 
+			SsrShader::ptr()) {
 			Singleton<GlobalInfo>::getSingleton()->shaderReady = true;
 			return 0;
 		}

@@ -1,6 +1,6 @@
 #version 430 core
 out vec4 FragColor;
-in vec2 texCoord;
+noperspective in vec2 texCoord;
 uniform sampler2D ldrTexture;
 uniform vec2 viewportSize;
 const vec2 inverseScreenSize = 1/viewportSize;

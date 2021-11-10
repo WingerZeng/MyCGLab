@@ -132,17 +132,21 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(FragShader_BloomFilter);
 
-	DEF_SHADER_SOURCE(FragShader_DeferredDirectLight);
+	DEF_SHADER_SOURCE(FragShader_DirectLightFilter);
 
-	DEF_SHADER_SOURCE(FragShader_DeferredSSDO);
+	DEF_SHADER_SOURCE(FragShader_SSDO);
 
-	DEF_SHADER_SOURCE(FragShader_DeferredComposite);
+	DEF_SHADER_SOURCE(FragShader_SSDOFilter);
 	
 	DEF_SHADER_SOURCE(VertexShader_CubeShadowMap);
 
 	DEF_SHADER_SOURCE(GeoShader_CubeShadowMap);
 
 	DEF_SHADER_SOURCE(FragShader_ShadowMap);
+
+	DEF_SHADER_SOURCE(FragShader_SSR);
+
+	DEF_SHADER_SOURCE(FragShader_SSRFilter);
 #undef DEF_SHADER_SOURCE
 //---------------------------------
 //
@@ -158,9 +162,12 @@ namespace mcl {
 	using ToneMapShader = Shader<VertexShader_PostProc, FragShader_ToneMap>;
 	using BloomFilterShader = Shader<VertexShader_PostProc, FragShader_BloomFilter>;
 	using CubeShaodwMapShader = Shader<VertexShader_CubeShadowMap, GeoShader_CubeShadowMap, FragShader_ShadowMap>;
-	using DeferredDirectLightShader = Shader<VertexShader_PostProc, FragShader_DeferredDirectLight>;
-	using DeferredSsdoShader = Shader<VertexShader_PostProc, FragShader_DeferredSSDO>;
-	using DeferredCompositeShader = Shader<VertexShader_PostProc, FragShader_DeferredComposite>;
+	using DirectLightShader = Shader<VertexShader_PostProc, FragShader_DirectLight>;
+	using DirectLightFilterShader = Shader<VertexShader_PostProc, FragShader_DirectLightFilter>;
+	using SsdoShader = Shader<VertexShader_PostProc, FragShader_SSDO>;
+	using SsdoFilterShader = Shader<VertexShader_PostProc, FragShader_SSDOFilter>;
+	using SsrShader = Shader<VertexShader_PostProc, FragShader_SSR>;
+	using SsrFilterShader = Shader<VertexShader_PostProc, FragShader_SSRFilter>;
 	using FxaaShader = Shader<VertexShader_PostProc, FragShader_Fxaa>;
 	int initAllShaders();
 }

@@ -297,7 +297,8 @@ namespace mcl {
 
 	std::array<GLuint, GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetFromats = {
 		GL_RGB16F, //COLOR
-		GL_RGB16F, //ALBEDO
+		GL_RGBA16F, //ALBEDO
+		GL_RGBA16F, //SPECULAR
 		GL_RGB32F,//WORLD POS
 		GL_RGB32F,//NORMAL
 		GL_RGB8, //PRIMID
@@ -306,7 +307,8 @@ namespace mcl {
 
 	std::array<GLuint, mcl::GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetBaseFromats = {
 		GL_RGB, //COLOR
-		GL_RGB, //ALBEDO
+		GL_RGBA, //ALBEDO
+		GL_RGBA, //SPECULAR
 		GL_RGB,//WORLD POS
 		GL_RGB,//NORMAL
 		GL_RGB, //PRIMID
@@ -316,6 +318,7 @@ namespace mcl {
 	std::array<GLuint, mcl::GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetUnitFromats = {
 		GL_FLOAT, //COLOR
 		GL_FLOAT, //ALBEDO
+		GL_FLOAT, //SPECULAR
 		GL_FLOAT,//WORLD POS
 		GL_FLOAT,//NORMAL
 		GL_UNSIGNED_BYTE, //PRIMID

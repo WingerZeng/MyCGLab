@@ -1,6 +1,6 @@
 #version 430 core
 out vec4 FragColor;
-in vec2 texCoord;
+noperspective in vec2 texCoord;
 uniform sampler2D prevTex; //滤波的输入图像
 uniform sampler2D curTex;  //目标Mipmap等级的图像（升采样时使用）
 uniform bool isDownSample;
