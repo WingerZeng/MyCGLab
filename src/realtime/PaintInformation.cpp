@@ -24,7 +24,7 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		shader->setUniformValue("selectedColor", QVector3D(selectedColor));
 		shader->setUniformValue("hasNormal", hasNormal);
 		break;
-	case mcl::DEFFER_DIRECT_LIGHT:
+	case mcl::DIRECT_LIGHT:
 		shader->setUniformValue("world2Screen", projMat * viewMat);
 		shader->setUniformValue("lightCount", GLint(lights.size()));
 		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
@@ -36,27 +36,12 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 			lights[j]->bind(shader, j, this->activeTextrueCnt);
 		}
 		break;
-	case mcl::DEFFER_SSDO:
-		shader->setUniformValue("world2Screen", projMat * viewMat);
-		shader->setUniformValue("lightCount", GLint(lights.size()));
-		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
-		mtrTex[GLMtrFrameBufferObject::ALBEDO]->bindToUniform("albedo", shader);
-		mtrTex[GLMtrFrameBufferObject::WORLD_POS]->bindToUniform("worldPos", shader);
-		mtrTex[GLMtrFrameBufferObject::NORMAL]->bindToUniform("normal", shader);
-		mtrTex[GLMtrFrameBufferObject::DEPTH]->bindToUniform("depth", shader);
-		directLightTexture->bindToUniform("directLightTexture", shader);
-		for (int j = 0; j < lights.size(); j++) {
-			lights[j]->bind(shader, j, this->activeTextrueCnt);
-		}
-		break;
-	case mcl::DEFFER_COMPOSITE:
-		mtrTex[GLMtrFrameBufferObject::COLOR]->bindToUniform("fragColor", shader);
-		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("primId", shader);
-		directLightTexture->bindToUniform("directLightTexture", shader);
-		ssdoTexture->bindToUniform("ssdoTexture", shader);
-		break;
-	case DEFFER_SSR:
-		lightCompositedTexture->bindToUniform("gFinalImage", shader);
+	case mcl::DIRECT_LIGHT_FILTER:
+		directLightTexture->bindToUniform("gLightImage", shader);
+		mtrTex[GLMtrFrameBufferObject::ALBEDO]->bindToUniform("gAlbedo", shader);
+		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("gPrimId", shader);
+	case SSR:
+		directLightFilterTexture->bindToUniform("gFinalImage", shader);
 		mtrTex[GLMtrFrameBufferObject::ALBEDO]->bindToUniform("gAlbedo", shader);
 		mtrTex[GLMtrFrameBufferObject::SPECULAR]->bindToUniform("gSpecular", shader);
 		mtrTex[GLMtrFrameBufferObject::NORMAL]->bindToUniform("gWorldNormal", shader);
@@ -69,6 +54,50 @@ void mcl::PaintInfomation::setUniformValue(QOpenGLShaderProgram* shader, PaintSt
 		shader->setUniformValue("project", projMat);
 		shader->setUniformValue("invProject", projMat.inverted());
 		shader->setUniformValue("bgColor", QVector3D(clearColor));
+		break;
+	case SSR_FILTER:
+		directLightFilterTexture->bindToUniform("gDirectLightImage", shader);
+		ssrTexture->bindToUniform("gSsrImage", shader);
+		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("gPrimId", shader);
+		mtrTex[GLMtrFrameBufferObject::NORMAL]->bindToUniform("gWorldNormal", shader);
+	case mcl::SSDO:
+		shader->setUniformValue("world2Screen", projMat * viewMat);
+		shader->setUniformValue("lightCount", GLint(lights.size()));
+		shader->setUniformValue("sceneExtent", (sceneBnd.pMax() - sceneBnd.pMin()).length());
+		mtrTex[GLMtrFrameBufferObject::ALBEDO]->bindToUniform("albedo", shader);
+		mtrTex[GLMtrFrameBufferObject::WORLD_POS]->bindToUniform("worldPos", shader);
+		mtrTex[GLMtrFrameBufferObject::NORMAL]->bindToUniform("normal", shader);
+		mtrTex[GLMtrFrameBufferObject::DEPTH]->bindToUniform("depth", shader);
+		ssrFilterTexture->bindToUniform("directLightTexture", shader);
+		for (int j = 0; j < lights.size(); j++) {
+			lights[j]->bind(shader, j, this->activeTextrueCnt);
+		}
+		break;
+	case mcl::SSDO_FILTER:
+		mtrTex[GLMtrFrameBufferObject::COLOR]->bindToUniform("gRasterColor", shader);
+		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("gPrimId", shader);
+		ssdoTexture->bindToUniform("gSsdoTexture", shader);
+		ssrFilterTexture->bindToUniform("gFinalImage", shader);
+		break;
+	case BLOOM:
+		shader->setUniformValue("isDownSample", bloomSampleState > 0);
+		if (bloomSampleState > 0) {
+			if (bloomSampleState == 1) {
+				finalHdrTexture->bindToUniform("prevTex", shader);
+				shader->setUniformValue("firstDownSample", true);
+			}
+			else {
+				bloomMipTex[bloomSampleState - 2]->bindToUniform("prevTex", shader);
+				shader->setUniformValue("firstDownSample", false);
+			}
+			shader->setUniformValue("size", QVector2D(bloomMipTex[bloomSampleState - 1]->size().x(), bloomMipTex[bloomSampleState - 1]->size().y()));
+		}
+		if (bloomSampleState < 0) {
+			bloomMipTex[-bloomSampleState - 1]->bindToUniform("prevTex", shader);
+			bloomMipTex[-bloomSampleState - 2]->bindToUniform("curTex", shader);
+			shader->setUniformValue("firstDownSample", false);
+			shader->setUniformValue("size", QVector2D(bloomMipTex[-bloomSampleState - 2]->size().x(), bloomMipTex[-bloomSampleState - 2]->size().y()));
+		}
 		break;
 	case mcl::TONE_MAP:
 		mtrTex[GLMtrFrameBufferObject::PRIMID]->bindToUniform("primId", shader);

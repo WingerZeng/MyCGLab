@@ -33,9 +33,9 @@ uniform int lightCount;
 /* constants */
 const float noiseScale = 0.01;
 const float PI = 3.14159269;
-const int PcfSampleCnt = 6;
+const int PcfSampleCnt = 4;
 const int PcssSampleCnt = 4;
-const float PseudoRandomFactor = 0.8;
+const float PseudoRandomFactor = 1;
 const float PcssShadowEdgeFadeFactor = 5;
 const float FullShadowedBlockerRate = 0.1;
 const float lightAreaScale = 1;
@@ -44,7 +44,6 @@ const bool outputUnshadowedRate = false;
 /* global variants */
 vec3 aWorldPos;
 vec3 aNormal;
-vec3 aAlbedo;
 vec4 aFragColor;
 float aDepth;
 
@@ -225,7 +224,6 @@ void main(){
 	//mtr values
 	aWorldPos = texture(worldPos, texCoord).xyz;
 	aNormal = texture(normal, texCoord).xyz;
-	aAlbedo = texture(albedo, texCoord).xyz;
 	aDepth = texture(depth, texCoord).r;
 
 	//calculate direct light
@@ -264,7 +262,7 @@ void main(){
 	} 
 
 	if(!outputUnshadowedRate)
-		FragColor += (vec4(aAlbedo*totLight,1.0)); 
+		FragColor += vec4(totLight,1.0); 
 	if(outputUnshadowedRate){
 		FragColor /= lightCount;
 	}

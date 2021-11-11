@@ -18,10 +18,13 @@ namespace mcl {
 	enum PaintStage {
 		LIGHT_PREPARE,
 		DEFFER_PREPARE,
-		DEFFER_DIRECT_LIGHT,
-		DEFFER_SSDO,
-		DEFFER_COMPOSITE,
-		DEFFER_SSR,
+		DIRECT_LIGHT,
+		DIRECT_LIGHT_FILTER,
+		SSR,
+		SSR_FILTER,
+		SSDO,
+		SSDO_FILTER,
+		BLOOM,
 		TONE_MAP,
 		FXAA,
 		FORWARD_SHADING,
@@ -45,8 +48,11 @@ namespace mcl {
 
 		std::vector<std::shared_ptr<GLAbstractTexture>> mtrTex;
 		std::shared_ptr<GLAbstractTexture> directLightTexture; //vec4(未加阴影的directLightColor, shadowRate)
+		std::shared_ptr<GLAbstractTexture> directLightFilterTexture; //vec4(未加阴影的directLightColor, shadowRate)
 		std::shared_ptr<GLAbstractTexture> ssdoTexture;
-		std::shared_ptr<GLAbstractTexture> lightCompositedTexture;
+		std::shared_ptr<GLAbstractTexture> ssdoFilterTexture;
+		std::shared_ptr<GLAbstractTexture> ssrTexture;
+		std::shared_ptr<GLAbstractTexture> ssrFilterTexture;
 		std::shared_ptr<GLAbstractTexture> finalHdrTexture;
 		std::shared_ptr<GLAbstractTexture> finalLdrTexture;
 		std::vector<std::shared_ptr<GLAbstractTexture>> bloomMipTex;

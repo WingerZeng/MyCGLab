@@ -15,19 +15,37 @@ namespace mcl {
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
 
-	class DeferredDirectLightPaintVisitor : public PostProcPaintVisitor
+	class DirectLightPaintVisitor : public PostProcPaintVisitor
 	{
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
 
-	class DeferredSsdoPaintVisitor : public PostProcPaintVisitor
+	class DirectLightFilterPaintVisitor : public PostProcPaintVisitor
 	{
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
 	};
 
-	class DeferredCompositePaintVisitor : public PostProcPaintVisitor
+	class SsrPaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
+
+	class SsrPaintFilterVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
+
+	class SsdoPaintVisitor : public PostProcPaintVisitor
+	{
+	public:
+		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
+	};
+
+	class SsdoFilterPaintVisitor : public PostProcPaintVisitor
 	{
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
@@ -40,12 +58,6 @@ namespace mcl {
 	};
 
 	class FxaaPaintVisitor: public PostProcPaintVisitor
-	{
-	public:
-		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;
-	};
-
-	class SsrPaintVisitor : public PostProcPaintVisitor
 	{
 	public:
 		virtual int paintTris(PaintInfomation* info, PTriMesh* tri) override;

@@ -132,6 +132,8 @@ namespace mcl {
 
 	DEF_SHADER_SOURCE(FragShader_BloomFilter);
 
+	DEF_SHADER_SOURCE(FragShader_DirectLight);
+
 	DEF_SHADER_SOURCE(FragShader_DirectLightFilter);
 
 	DEF_SHADER_SOURCE(FragShader_SSDO);

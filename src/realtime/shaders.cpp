@@ -11,12 +11,14 @@ namespace mcl{
 		LightPerFragShader::clear();
 		ToneMapShader::clear();
 		CubeShaodwMapShader::clear();
-		DeferredDirectLightShader::clear();
-		DeferredSsdoShader::clear();
-		BloomFilterShader::clear();
-		DeferredCompositeShader::clear();
-		FxaaShader::clear();
+		DirectLightShader::clear();
+		DirectLightFilterShader::clear();
 		SsrShader::clear();
+		SsrFilterShader::clear();
+		SsdoShader::clear();
+		SsdoFilterShader::clear();
+		BloomFilterShader::clear();
+		FxaaShader::clear();
 		if (CommonShader::ptr() &&
 			LightShader::ptr() &&
 			LineShader::ptr() &&
@@ -24,12 +26,14 @@ namespace mcl{
 			LightPerFragShader::ptr() &&
 			ToneMapShader::ptr() &&
 			CubeShaodwMapShader::ptr() &&
-			DeferredDirectLightShader::ptr() &&
-			DeferredSsdoShader::ptr() &&
+			DirectLightShader::ptr() &&
+			DirectLightFilterShader::ptr() &&
+			SsrShader::ptr() &&
+			SsrFilterShader::ptr() &&
+			SsdoShader::ptr() &&
+			SsdoFilterShader::ptr() &&
 			BloomFilterShader::ptr() &&
-			DeferredCompositeShader::ptr() &&
-			FxaaShader::ptr() && 
-			SsrShader::ptr()) {
+			FxaaShader::ptr()) {
 			Singleton<GlobalInfo>::getSingleton()->shaderReady = true;
 			return 0;
 		}

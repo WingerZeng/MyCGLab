@@ -37,8 +37,8 @@ const float PI = 3.14159269;
 
 /* SSDO variants */ 
 uniform float SsdoSampleRadiusFactor = 0.15;
-const int SsdoUnitSphereSampleCnt = 4; 
-const int SsdoRadiusSampleCnt = 3;
+const int SsdoUnitSphereSampleCnt = 3; 
+const int SsdoRadiusSampleCnt = 2;
 const int SsdoTotalSampleCnt = SsdoRadiusSampleCnt * SsdoUnitSphereSampleCnt * SsdoUnitSphereSampleCnt;
 const float attRefDist = sceneExtent * SsdoSampleRadiusFactor / 1.5;
 const float SsdoSampleThresholdCos2Theta = 0.9; //采样时theta大于一个临界角度，防止深度误差
@@ -52,7 +52,7 @@ vec3 aAlbedo;
 float aDepth;
 vec3 b,t;
 
-/* noise function */
+/* random function */
 float random(float x)
 {
     float y = fract(sin(x)*100001.0);
@@ -66,33 +66,8 @@ vec3 random3(vec3 v3){
     v3 = vec3(dot(v3,vec3(127.1,-311.7,123.7)),
               dot(v3,vec3(269.5,-183.3,812.321)),
 			  dot(v3,vec3(251.13,918.13,-772.13)));
-	vec3 ret = sin(v3)*1375896.453;
-    v3 = vec3(dot(v3,vec3(251.13,918.13,-772.13)),
-              dot(v3,vec3(127.1,-311.7,123.7)),
-			  dot(v3,vec3(269.5,-183.3,812.321)));
-	ret = cos(v3) * ret;
+	vec3 ret = sqrt(abs(v3)*1375896.453);
     return -1.0 + 2.0*fract(ret);
-}
-// Gradient Noise by Inigo Quilez - iq/2013
-// https://www.shadertoy.com/view/XdXGW8
-float noise(vec3 v3) {
-	v3 *= sceneExtent / noiseScale;
-    vec3 i = floor(v3);
-    vec3 f = fract(v3);
-
-    vec3 u = f*f*(3.0-2.0*f);
-																	 
-    return mix(mix(mix( dot( random3(i + vec3(0.0,0.0,0.0) ), f - vec3(0.0,0.0,0.0) ),
-						dot( random3(i + vec3(1.0,0.0,0.0) ), f - vec3(1.0,0.0,0.0) ), u.x),
-				   mix( dot( random3(i + vec3(0.0,1.0,0.0) ), f - vec3(0.0,1.0,0.0) ),
-						dot( random3(i + vec3(1.0,1.0,0.0) ), f - vec3(1.0,1.0,0.0) ), u.x), u.y),
-			   mix(mix( dot( random3(i + vec3(0.0,0.0,1.0) ), f - vec3(0.0,0.0,1.0) ),
-						dot( random3(i + vec3(1.0,0.0,1.0) ), f - vec3(1.0,0.0,1.0) ), u.x),
-				   mix( dot( random3(i + vec3(0.0,1.0,1.0) ), f - vec3(0.0,1.0,1.0) ),
-						dot( random3(i + vec3(1.0,1.0,1.0) ), f - vec3(1.0,1.0,1.0) ), u.x), u.y), u.z);
-}
-vec3 noise3(vec3 v3) {
-	return vec3(noise(v3),noise(v3 + sceneExtent * 12.414),noise(v3 + sceneExtent * 532.1365));
 }
 
 vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receiverDist, int dim){
@@ -109,6 +84,7 @@ vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receive
  */
 vec3 SSDO(vec3 rand3D){
 	//calculate sample point
+	// cosTheta重要性采样
 	float sinPhi = sin(2*PI*rand3D.x);
 	float cosPhi = cos(2*PI*rand3D.x);
 	float sinTheta2 = rand3D.y*(SsdoSampleThresholdCos2Theta + 1)/2 - (SsdoSampleThresholdCos2Theta - 1)/2;

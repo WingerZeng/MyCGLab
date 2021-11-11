@@ -102,11 +102,13 @@ namespace mcl {
 		int bloomMipLevel = MaxBloomMipLevel;
 
 		std::shared_ptr<PaintVisitor> mtrPainter;
-		std::shared_ptr<GLColorFrameBufferObject> pingpongFbo[2];
+		std::shared_ptr<GLColorFrameBufferObject> pingpongFbo[3];
 		std::shared_ptr<GLColorFrameBufferObject> directLightFbo;
-		std::shared_ptr<GLColorFrameBufferObject> ssdoFbo;
-		std::shared_ptr<GLColorFrameBufferObject> compositeFbo;
+		std::shared_ptr<GLColorFrameBufferObject> directLightFilterFbo;
 		std::shared_ptr<GLColorFrameBufferObject> ssrFbo;
+		std::shared_ptr<GLColorFrameBufferObject> ssrFilterFbo;
+		std::shared_ptr<GLColorFrameBufferObject> ssdoFbo;
+		std::shared_ptr<GLColorFrameBufferObject> ssdoFilterFbo;
 		std::shared_ptr<GLColorFrameBufferObject> toneMapFbo;
 		std::shared_ptr<GLColorFrameBufferObject> bloomMipFbos[MaxBloomMipLevel];
 		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;

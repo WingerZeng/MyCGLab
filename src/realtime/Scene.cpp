@@ -75,11 +75,15 @@ void Scene::initializeGL()
 	billboard->initAll();
 	pingpongFbo[0] = std::make_shared<GLColorFrameBufferObject>();
 	pingpongFbo[1] = std::make_shared<GLColorFrameBufferObject>();
+	pingpongFbo[2] = std::make_shared<GLColorFrameBufferObject>();
+
 	directLightFbo = pingpongFbo[0];
-	ssdoFbo = std::make_shared<GLColorFrameBufferObject>();
-	compositeFbo = pingpongFbo[1];
+	directLightFilterFbo = pingpongFbo[2];
 	ssrFbo = pingpongFbo[0];
-	toneMapFbo = pingpongFbo[1];
+	ssrFilterFbo = pingpongFbo[1];
+	ssdoFbo = pingpongFbo[0];
+	ssdoFilterFbo = pingpongFbo[2];
+	toneMapFbo = pingpongFbo[0];
 	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
 	for (int i = 0; i < MaxBloomMipLevel; i++) {
 		bloomMipFbos[i] = std::make_shared<GLColorFrameBufferObject>();
@@ -94,9 +98,12 @@ void Scene::initializeGL()
 	info.lineWidth = 1.5f;
 	info.pointSize = 8.0f;
 	info.directLightTexture = directLightFbo->texture();
+	info.directLightFilterTexture = directLightFilterFbo->texture();
+	info.ssrTexture = ssrFbo->texture();
+	info.ssrFilterTexture = ssrFilterFbo->texture();
 	info.ssdoTexture = ssdoFbo->texture();
-	info.lightCompositedTexture = compositeFbo->texture();
-	info.finalHdrTexture = ssrFbo->texture();
+	info.ssdoFilterTexture = ssdoFilterFbo->texture();
+	info.finalHdrTexture = ssdoFilterFbo->texture();
 	info.finalLdrTexture = toneMapFbo->texture();
 	for (int i=0;i<MaxBloomMipLevel;i++){
 		info.bloomMipTex.push_back(bloomMipFbos[i]->texture());
@@ -111,7 +118,7 @@ void Scene::resizeGL(int w, int h)
 	camera->initialize(w, h);
 	pingpongFbo[0]->resize(h, w);
 	pingpongFbo[1]->resize(h, w);
-	ssdoFbo->resize(h, w);
+	pingpongFbo[2]->resize(h, w);
 	mtrfbo->resize(h, w);
 
 	int mipW = w, mipH = h;
@@ -177,22 +184,32 @@ void Scene::paintGL()
 	// direct light
 	directLightFbo->bind();
 	directLightFbo->clear(&info);
-	billboard->paint(&info, Singleton<DeferredDirectLightPaintVisitor>::getSingleton());
+	billboard->paint(&info, Singleton<DirectLightPaintVisitor>::getSingleton());
 
-	// SSDO
-	ssdoFbo->bind();
-	ssdoFbo->clear(&info);
-	billboard->paint(&info, Singleton<DeferredSsdoPaintVisitor>::getSingleton());
-
-	//Composite
-	compositeFbo->bind();
-	compositeFbo->clear(&info);
-	billboard->paint(&info, Singleton<DeferredCompositePaintVisitor>::getSingleton());
+	// filter direct light
+	directLightFilterFbo->bind();
+	directLightFilterFbo->clear(&info);
+	billboard->paint(&info, Singleton<DirectLightFilterPaintVisitor>::getSingleton());
 
 	//SSR
 	ssrFbo->bind();
 	ssrFbo->clear(&info);
 	billboard->paint(&info, Singleton<SsrPaintVisitor>::getSingleton());
+
+	//SSR
+	ssrFilterFbo->bind();
+	ssrFilterFbo->clear(&info);
+	billboard->paint(&info, Singleton<SsrPaintFilterVisitor>::getSingleton());
+
+	// SSDO
+	ssdoFbo->bind();
+	ssdoFbo->clear(&info);
+	billboard->paint(&info, Singleton<SsdoPaintVisitor>::getSingleton());
+
+	// filter SSDO
+	ssdoFilterFbo->bind();
+	ssdoFilterFbo->clear(&info);
+	billboard->paint(&info, Singleton<SsdoFilterPaintVisitor>::getSingleton());
 
 	//Bloom down sample
 	for (int i = 0; i < bloomMipLevel; i++) {
