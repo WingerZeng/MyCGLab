@@ -18,13 +18,13 @@ uniform mat4 invProject;
 uniform vec3 bgColor;
 
 const vec2 inverseScreenSize = 1/viewportSize;
-const int SampleCnt = 3;
+const int SampleCnt = 7;
 const float Samplntv = 1.0 / SampleCnt;
 const float Scale = 1376.453;
 const float minRayStep = sceneExtent / 20;
-const float firstStepScale = 0.003;
-const float StepGrowRate = 1.5;
-const int maxStepCnt = 15;
+const float firstStepScale = 0.002;
+const float StepGrowRate = 1.1;
+const int maxStepCnt = 60;
 const int numBinarySearchSteps = 5;
 const float edgeFadeRate = 0.5;
 const float DepthOffset = sceneExtent / 400;

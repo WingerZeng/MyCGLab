@@ -10,7 +10,7 @@ namespace mcl {
 
 		tex = std::make_shared<GLTexture2D>(GL_RGB16F, GL_RGB, GL_FLOAT);
 		tex->bind();
-		tex->setFilter(GL_LINEAR, GL_LINEAR);
+		tex->setFilter(GL_NEAREST, GL_NEAREST);
 		tex->setWrap(GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
 		tex->release();
 
@@ -29,10 +29,9 @@ namespace mcl {
 
 	void GLColorFrameBufferObject::bind()
 	{
-		GLFUNC->glDisable(GL_DEPTH_TEST);
 		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		if (GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			LOG(FATAL) << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
+			LOG(FATAL) << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << GLFUNC->glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	}
 
 	void GLColorFrameBufferObject::resize(int height, int width)
@@ -223,9 +222,9 @@ namespace mcl {
 
 	void GLMtrFrameBufferObject::clear(PaintInfomation* info)
 	{
-		GLFUNC->glClearColor(0, 0, 0, 1);
-		GLenum buffers[3] = { GL_COLOR_ATTACHMENT0 + ALBEDO, GL_COLOR_ATTACHMENT0 + WORLD_POS, GL_COLOR_ATTACHMENT0 + NORMAL };
-		GLFUNC->glDrawBuffers(3, buffers);
+		GLFUNC->glClearColor(0, 0, 0, 0);
+		GLenum buffers[4] = {GL_COLOR_ATTACHMENT0 + SPECULAR, GL_COLOR_ATTACHMENT0 + ALBEDO, GL_COLOR_ATTACHMENT0 + WORLD_POS, GL_COLOR_ATTACHMENT0 + NORMAL };
+		GLFUNC->glDrawBuffers(4, buffers);
 		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
 
 		GLFUNC->glClearColor(1, 1, 1, 1);
@@ -302,7 +301,7 @@ namespace mcl {
 		GL_RGB32F,//WORLD POS
 		GL_RGB32F,//NORMAL
 		GL_RGB8, //PRIMID
-		GL_DEPTH_COMPONENT, //DEPTH
+		GL_DEPTH_COMPONENT32F, //DEPTH
 	};
 
 	std::array<GLuint, mcl::GLMtrFrameBufferObject::nTargetType> GLMtrFrameBufferObject::targetBaseFromats = {
@@ -324,5 +323,42 @@ namespace mcl {
 		GL_UNSIGNED_BYTE, //PRIMID
 		GL_FLOAT, //DEPTH
 	};
+
+	AbstractGLFrameBufferObject::~AbstractGLFrameBufferObject()
+	{
+	}
+
+	GLQWidgetFrameBufferObject::GLQWidgetFrameBufferObject(QOpenGLWidget* qwgt)
+		:qwgt(qwgt)
+	{
+	}
+
+	void GLQWidgetFrameBufferObject::bind()
+	{
+		GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, qwgt->defaultFramebufferObject());
+	}
+
+	void GLQWidgetFrameBufferObject::clear(PaintInfomation* info)
+	{
+		GLFUNC->glClearColor(0, 0, 0, 1);
+		GLFUNC->glClear(GL_COLOR_BUFFER_BIT);
+		GLFUNC->glClearColor(1, 1, 1, 1);
+		GLFUNC->glClear(GL_DEPTH_BUFFER_BIT);
+	}
+
+	void GLQWidgetFrameBufferObject::resize(int height, int width)
+	{
+		// Do nothing
+	}
+
+	std::shared_ptr<mcl::GLAbstractTexture> GLQWidgetFrameBufferObject::texture(int idx /*= 0*/)
+	{
+		return nullptr;
+	}
+
+	GLuint GLQWidgetFrameBufferObject::fboId()
+	{
+		return qwgt->defaultFramebufferObject();
+	}
 
 }

@@ -1,9 +1,32 @@
 #pragma once
 #include <array>
+#include <QOpenGLWidget>
 #include "mcl.h"
 #include "types.h"
+
 namespace mcl {
-	class GLFrameBufferObject {
+	class AbstractGLFrameBufferObject {
+	public:
+		virtual ~AbstractGLFrameBufferObject();
+
+		virtual void bind() = 0;
+
+		virtual void clear(PaintInfomation* info) = 0;
+
+		virtual void resize(int height, int width) = 0;
+
+		template<class T>
+		std::shared_ptr<T> castedTexture(int idx = 0) {
+			return std::dynamic_pointer_cast<T>(texture(idx));
+		}
+
+		virtual std::shared_ptr<GLAbstractTexture> texture(int idx = 0) = 0;
+
+		virtual GLuint fboId() = 0;
+	};
+
+	class GLFrameBufferObject: public AbstractGLFrameBufferObject
+	{
 	public:
 		GLFrameBufferObject();
 		virtual ~GLFrameBufferObject();
@@ -21,6 +44,25 @@ namespace mcl {
 	protected:
 		GLuint fbo;
 		int w, h;
+	};
+
+	class GLQWidgetFrameBufferObject : public AbstractGLFrameBufferObject
+	{
+	public:
+		GLQWidgetFrameBufferObject(QOpenGLWidget* qwgt);
+
+		virtual void bind();
+
+		virtual void clear(PaintInfomation* info) override;
+
+		virtual void resize(int height, int width) override;
+
+		virtual std::shared_ptr<GLAbstractTexture> texture(int idx = 0) override;
+
+		virtual GLuint fboId() override;
+
+	protected:
+		QOpenGLWidget* qwgt;
 	};
 
 	class GLColorFrameBufferObject :public GLFrameBufferObject

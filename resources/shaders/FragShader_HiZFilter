@@ -1,0 +1,25 @@
+#version 430 core
+out vec4 FragColor;
+noperspective in vec2 texCoord;
+// 上一层Mipmap的纹理和尺寸
+uniform sampler2D gPrevImage;
+uniform vec2 preMipSize;
+
+// 目标图像的长宽
+uniform vec2 curMipSize;
+
+const ivec2 offset[4] = {{0,0},{0,1},{1,0},{1,1}};
+
+void main(){
+	// 初始化为最大深度
+	FragColor.r = 1;
+	// 采样上级Mip纹理
+	ivec2 iCoord = (ivec2)(curMipSize * texCoord);
+	int i;
+	for(i=0;i<4;i++){
+		vec2 sampleCoord = (iCoord * 2 + offset[i] + 0.5) * 1.0 / preMipSize;
+		float sampleDepth = texture(gPrevImage, sampleCoord).r;
+		// 取最小深度
+		FragColor.r = min(sampleDepth, FragColor.r);
+	}
+}

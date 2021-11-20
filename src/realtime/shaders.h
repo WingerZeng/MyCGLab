@@ -149,6 +149,10 @@ namespace mcl {
 	DEF_SHADER_SOURCE(FragShader_SSR);
 
 	DEF_SHADER_SOURCE(FragShader_SSRFilter);
+
+	DEF_SHADER_SOURCE(FragShader_HiZFilter);
+
+	DEF_SHADER_SOURCE(FragShader_HiZSSR);
 #undef DEF_SHADER_SOURCE
 //---------------------------------
 //
@@ -171,6 +175,8 @@ namespace mcl {
 	using SsrShader = Shader<VertexShader_PostProc, FragShader_SSR>;
 	using SsrFilterShader = Shader<VertexShader_PostProc, FragShader_SSRFilter>;
 	using FxaaShader = Shader<VertexShader_PostProc, FragShader_Fxaa>;
+	using HiZFilterShader = Shader<VertexShader_PostProc, FragShader_HiZFilter>;
+	using HiZSSRShader = Shader<VertexShader_PostProc, FragShader_HiZSSR>;
 	int initAllShaders();
 }
 

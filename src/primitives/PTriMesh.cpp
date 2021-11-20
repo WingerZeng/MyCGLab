@@ -212,12 +212,17 @@ namespace mcl{
 		return nEgs;
 	}
 
-	std::unique_ptr<PTriMesh> PTriMesh::createBillBoard()
+	std::shared_ptr<PTriMesh> PTriMesh::getBillBoard()
 	{
-		std::vector<int> tris{0,1,2};
-		std::vector<Point3f> pts{ Point3f{-1,-1,0}, Point3f{3,-1,0}, Point3f{-1,3,0} };
-		std::vector<Point2f> uvs{ Point2f{0,0}, Point2f{2,0}, Point2f{0,2} };
-		return std::make_unique<PTriMesh>(tris, pts, uvs, std::vector<Normal3f>{Normal3f(), Normal3f(), Normal3f()});
+		static std::shared_ptr<PTriMesh> billboard;
+		if (!billboard) {
+			std::vector<int> tris{ 0,1,2 };
+			std::vector<Point3f> pts{ Point3f{-1,-1,0}, Point3f{3,-1,0}, Point3f{-1,3,0} };
+			std::vector<Point2f> uvs{ Point2f{0,0}, Point2f{2,0}, Point2f{0,2} };
+			billboard = std::make_shared<PTriMesh>(tris, pts, uvs, std::vector<Normal3f>{Normal3f(), Normal3f(), Normal3f()});
+			billboard->initAll();
+		}
+		return billboard;
 	}
 
 }

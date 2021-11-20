@@ -9,7 +9,19 @@
 #include "Material.h"
 #include "GLFunctions.h"
 #include "utilities.h"
-namespace mcl{
+namespace mcl {
+	void setDefferPrepareUniform(PaintInfomation* info, QOpenGLShaderProgram* shader)
+	{
+		shader->setUniformValue("modelMatInv", info->modelMat.inverted());
+		shader->setUniformValue("modelMat", info->modelMat);
+		shader->setUniformValue("modelViewMatInv", (info->viewMat * info->modelMat).inverted());
+		shader->setUniformValue("viewMat", info->viewMat);
+		shader->setUniformValue("projMat", info->projMat);
+		shader->setUniformValue("selected", GLint(info->selected));
+		shader->setUniformValue("selectedColor", QVector3D(info->selectedColor));
+		shader->setUniformValue("hasNormal", info->hasNormal);
+	}
+
 	//#TODO1 info可以优化为栈模式
 	int DefaultPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
 	{
@@ -32,7 +44,7 @@ namespace mcl{
 
 			info->hasNormal = tri->hasNormal();
 
-			info->setUniformValue(shader, DEFFER_PREPARE);
+			setDefferPrepareUniform(info, shader);
 			tri->getMaterial()->prepareGL(shader);
 
 			tri->getVAO()->bind();
@@ -47,7 +59,7 @@ namespace mcl{
 		}
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {
 			LineShader::ptr()->bind();
-			info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
+			setLineUniform(info);
 			LineShader::ptr()->setUniformValue("ourColor", .0, .0, .0, 1.0f);
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
 			GLFUNC->glPolygonOffset(-1, -1);
@@ -83,7 +95,7 @@ namespace mcl{
 
 		point->getVAO().bind();
 		PointShader::ptr()->bind();
-		info->setUniformValue(PointShader::ptr(), FORWARD_SHADING);
+		setPointUniform(info);
 		PointShader::ptr()->setUniformValue("ourColor", QVector4D(point->color().x(), point->color().y(), point->color().z(), 1.0f));
 
 		GLFUNC->glDrawArrays(GL_POINTS, 0, 1);
@@ -120,14 +132,14 @@ namespace mcl{
 			{
 				shader = LightPerFragShader::ptr();
 				shader->bind();
-				info->setUniformValue(shader, DEFFER_PREPARE);
+				setDefferPrepareUniform(info, shader);
 				shader->setUniformValue("material.mtype", -1);
 				shader->setUniformValue("material.ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
 			else {
 				shader = CommonShader::ptr();
 				shader->bind();
-				info->setUniformValue(shader, DEFFER_PREPARE);
+				setDefferPrepareUniform(info, shader);
 				shader->setUniformValue("ourColor", polygon->color().x(), polygon->color().y(), polygon->color().z(), 1.0f);
 			}
 
@@ -144,7 +156,7 @@ namespace mcl{
 		}
 		if (info->fillmode == WIREFRAME || info->fillmode == FILL_WIREFRAME) {  //选中时隐藏
 			LineShader::ptr()->bind();
-			info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
+			setLineUniform(info);
 			LineShader::ptr()->setUniformValue("material.ourColor", .0, .0, .0, 1.0f);
 			GLFUNC->glEnable(GL_POLYGON_OFFSET_FILL);
 			GLFUNC->glPolygonOffset(-1, -1);
@@ -181,7 +193,7 @@ namespace mcl{
 		//do paint
 		lines->getVAO().bind();
 		LineShader::ptr()->bind();
-		info->setUniformValue(LineShader::ptr(), FORWARD_SHADING);
+		setLineUniform(info);
 		LineShader::ptr()->setUniformValue("ourColor", QVector4D(lines->color().x(), lines->color().y(), lines->color().z(), 1.0f));
 		if (lines->isLoop())
 			GLFUNC->glDrawArrays(GL_LINE_LOOP, 0, lines->getPtNum());
@@ -196,6 +208,18 @@ namespace mcl{
 		info->modelMat = tempTrans_;
 		info->selected = tempSelected_;
 		return 0;
+	}
+
+	void DefaultPaintVisitor::setPointUniform(PaintInfomation* info)
+	{
+		PointShader::ptr()->setUniformValue("u_viewportSize", info->width, info->height);
+		PointShader::ptr()->setUniformValue("pointSize", GLfloat(info->pointSize));
+	}
+
+	void DefaultPaintVisitor::setLineUniform(PaintInfomation* info)
+	{
+		LineShader::ptr()->setUniformValue("u_viewportSize", info->width, info->height);
+		LineShader::ptr()->setUniformValue("u_thickness", GLfloat(info->lineWidth));
 	}
 
 	int DeferredMtrPaintVisitor::paintTris(PaintInfomation* info, PTriMesh* tri)
@@ -219,7 +243,7 @@ namespace mcl{
 
 			info->hasNormal = tri->hasNormal();
 
-			info->setUniformValue(shader, DEFFER_PREPARE);
+			setDefferPrepareUniform(info, shader);
 			shader->setUniformValue("primid", QVector3D(intToRgb8(tri->id())));
 			tri->getMaterial()->prepareGL(shader);
 

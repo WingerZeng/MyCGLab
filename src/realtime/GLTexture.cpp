@@ -35,8 +35,15 @@ namespace mcl{
 	std::vector<GLuint> GLAbstractTexture::DestroyedActiveId;
 
 	GLTexture2D::GLTexture2D(GLuint internalType, GLuint baseType, GLuint unitType)
-		:internalType(internalType), baseType(baseType), unitType(unitType)
 	{
+		format.baseType = baseType;
+		format.internalType = internalType;
+		format.unitType = unitType;
+		format.sWrap = GL_CLAMP_TO_EDGE;
+		format.tWrap = GL_CLAMP_TO_EDGE;
+		format.maxFilter = GL_NEAREST;
+		format.minFilter = GL_NEAREST;
+		setFormat(format);
 	}
 
 	void GLTexture2D::bindToUniform(std::string name, QOpenGLShaderProgram* shader)
@@ -60,7 +67,7 @@ namespace mcl{
 	{
 		GLAbstractTexture::resize(w, h);
 		GLFUNC->glBindTexture(GL_TEXTURE_2D, tex);
-		GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, internalType, w, h, 0, baseType, unitType, NULL);
+		GLFUNC->glTexImage2D(GL_TEXTURE_2D, 0, format.internalType, w, h, 0, format.baseType, format.unitType, NULL);
 	}
 
 	void GLTexture2D::bindToFbo(GLuint fbo, GLuint attachment)
@@ -71,14 +78,30 @@ namespace mcl{
 
 	void GLTexture2D::setFilter(GLuint minFilter, GLuint maxFilter)
 	{
+		format.minFilter = minFilter;
+		format.maxFilter = maxFilter;
 		GLFUNC->glBindTexture(GL_TEXTURE_2D, tex);
 		GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 		GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxFilter);
 		GLFUNC->glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
+	void GLTexture2D::setFormat(GLTextureFormat format)
+	{
+		this->format = format;
+		setFilter(format.minFilter, format.maxFilter);
+		setWrap(format.sWrap, format.tWrap);
+	}
+
+	mcl::GLTextureFormat GLTexture2D::getFormat()
+	{
+		return format;
+	}
+
 	void GLTexture2D::setWrap(GLuint s, GLuint t)
 	{
+		format.sWrap = s;
+		format.tWrap = t;
 		GLFUNC->glBindTexture(GL_TEXTURE_2D, tex);
 		GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, s);
 		GLFUNC->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, t);

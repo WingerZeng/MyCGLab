@@ -33,6 +33,23 @@ namespace mcl {
 		int w, h;
 	};
 
+	struct GLTextureFormat
+	{
+		GLTextureFormat(GLuint internalType, GLuint baseType, GLuint unitType, GLuint minFilter,
+			GLuint maxFilter, GLuint sWrap, GLuint tWrap)
+			:internalType(internalType), baseType(baseType), unitType(unitType), minFilter(minFilter),
+			maxFilter(maxFilter), sWrap(sWrap), tWrap(tWrap) {}
+		GLTextureFormat() = default;
+
+		GLuint internalType;
+		GLuint baseType;
+		GLuint unitType;
+		GLuint minFilter; 
+		GLuint maxFilter;
+		GLuint sWrap;
+		GLuint tWrap;
+	};
+
 	class GLTexture2D: public GLAbstractTexture 
 	{
 	public:
@@ -50,6 +67,10 @@ namespace mcl {
 
 		void setFilter(GLuint minFilter, GLuint maxFilter);
 
+		void setFormat(GLTextureFormat format);
+
+		GLTextureFormat getFormat();
+
 		void setWrap(GLuint s, GLuint t);
 
 		static std::shared_ptr<GLTexture2D> createColorGLTexture2D(Color3f scale, const QString& texture, bool sRGB);
@@ -57,9 +78,7 @@ namespace mcl {
 		static std::shared_ptr<GLTexture2D> createFloatGLTexture2D(Float scale, const QString& texture);
 		static std::shared_ptr<GLTexture2D> createFloatGLTexture2D(Float color);
 	private:
-		GLuint internalType;
-		GLuint baseType;
-		GLuint unitType;
+		GLTextureFormat format;
 	};
 
 	class GLTextureMultiSample: public GLAbstractTexture

@@ -19,6 +19,8 @@ namespace mcl{
 		SsdoFilterShader::clear();
 		BloomFilterShader::clear();
 		FxaaShader::clear();
+		HiZFilterShader::clear();
+		HiZSSRShader::clear();
 		if (CommonShader::ptr() &&
 			LightShader::ptr() &&
 			LineShader::ptr() &&
@@ -33,7 +35,9 @@ namespace mcl{
 			SsdoShader::ptr() &&
 			SsdoFilterShader::ptr() &&
 			BloomFilterShader::ptr() &&
-			FxaaShader::ptr()) {
+			FxaaShader::ptr() &&
+			HiZFilterShader::ptr() &&
+			HiZSSRShader::ptr()) {
 			Singleton<GlobalInfo>::getSingleton()->shaderReady = true;
 			return 0;
 		}

@@ -42,7 +42,7 @@ namespace mcl {
 
 		bool hasNormal() { return !normals.empty(); }
 
-		static std::unique_ptr<PTriMesh> createBillBoard();
+		static std::shared_ptr<PTriMesh> getBillBoard();
 	private:
 		
 		std::vector<int> tris_;

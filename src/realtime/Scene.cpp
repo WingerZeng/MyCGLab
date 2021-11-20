@@ -27,6 +27,7 @@
 #include "GlobalInfo.h"
 #include "shaders.h"
 #include "GLTexture.h"
+#include "Painter.h"
 
 namespace mcl {
 Scene::Scene(QWidget* parent)
@@ -71,23 +72,35 @@ void Scene::initializeGL()
 	axis.updateViewMat(camera->getViewMatrixForAxis());
 	axis.updateProjMat(camera->getProjMatrixForAxis());
 
-	billboard = PTriMesh::createBillBoard();
-	billboard->initAll();
 	pingpongFbo[0] = std::make_shared<GLColorFrameBufferObject>();
 	pingpongFbo[1] = std::make_shared<GLColorFrameBufferObject>();
 	pingpongFbo[2] = std::make_shared<GLColorFrameBufferObject>();
 
-	directLightFbo = pingpongFbo[0];
-	directLightFilterFbo = pingpongFbo[2];
-	ssrFbo = pingpongFbo[0];
-	ssrFilterFbo = pingpongFbo[1];
-	ssdoFbo = pingpongFbo[0];
-	ssdoFilterFbo = pingpongFbo[2];
-	toneMapFbo = pingpongFbo[0];
-	mtrfbo = std::make_shared<GLMtrFrameBufferObject>(sampleRate);
-	for (int i = 0; i < MaxBloomMipLevel; i++) {
-		bloomMipFbos[i] = std::make_shared<GLColorFrameBufferObject>();
-	}
+	lightSMPainter = std::make_shared<LightsShadowMapPainter>();
+	lightSMPainter->init(&info);
+	mtrPainter = std::make_shared<DeferredMtrPainter>();
+	mtrPainter->init(&info);
+	directLightPainter = std::shared_ptr<DirectLightPainter>(new DirectLightPainter(pingpongFbo[0]));
+	directLightPainter->init(&info);
+	directLightFilterPainter = std::make_shared<DirectLightFilterPainter>(pingpongFbo[2]);
+	directLightFilterPainter->init(&info);
+	ssdoPainter = std::make_shared<SsdoPainter>(pingpongFbo[0]);
+	ssdoPainter->init(&info);
+	ssdoFilterPainter = std::make_shared<SsdoFilterPainter>(pingpongFbo[1]);
+	ssdoFilterPainter->init(&info);
+	hizFilterPainter = std::make_shared<HiZFilterPainter>(10);
+	hizFilterPainter->init(&info);
+	ssrPainter = std::make_shared<HiZSsrPainter>(pingpongFbo[0]);
+	ssrPainter->init(&info);
+	ssrFilterPainter = std::make_shared<SsrFilterPainter>(pingpongFbo[2]);
+	ssrFilterPainter->init(&info);
+	bloomFilterPainter = std::make_shared<BloomFilterPainter>(MaxBloomMipLevel, BloomMipStopSize);
+	bloomFilterPainter->init(&info);
+	toneMapPainter = std::make_shared<ToneMapPainter>(pingpongFbo[0]);
+	toneMapPainter->init(&info);
+	fxaaPainter = std::make_shared<FxaaPainter>(std::make_shared<GLQWidgetFrameBufferObject>(this));
+	fxaaPainter->init(&info);
+
 	doPrimAdd();
 
 	QTimer *timer = new QTimer(this);
@@ -97,17 +110,7 @@ void Scene::initializeGL()
 	//init paint info
 	info.lineWidth = 1.5f;
 	info.pointSize = 8.0f;
-	info.directLightTexture = directLightFbo->texture();
-	info.directLightFilterTexture = directLightFilterFbo->texture();
-	info.ssrTexture = ssrFbo->texture();
-	info.ssrFilterTexture = ssrFilterFbo->texture();
-	info.ssdoTexture = ssdoFbo->texture();
-	info.ssdoFilterTexture = ssdoFilterFbo->texture();
-	info.finalHdrTexture = ssdoFilterFbo->texture();
-	info.finalLdrTexture = toneMapFbo->texture();
-	for (int i=0;i<MaxBloomMipLevel;i++){
-		info.bloomMipTex.push_back(bloomMipFbos[i]->texture());
-	}
+	info.prims = &prims_;
 
 	initAllShaders();
 }
@@ -116,22 +119,19 @@ void Scene::resizeGL(int w, int h)
 {
 	GLFUNC->glViewport(0, 0, w, h);
 	camera->initialize(w, h);
-	pingpongFbo[0]->resize(h, w);
-	pingpongFbo[1]->resize(h, w);
-	pingpongFbo[2]->resize(h, w);
-	mtrfbo->resize(h, w);
 
-	int mipW = w, mipH = h;
-	int i = 0;
-	for (i = 0; i < MaxBloomMipLevel; i++) {
-		mipW = (mipW + 1) / 2;
-		mipH = (mipH + 1) / 2;
-		if (mipW < bloomMipStopSize || mipH < bloomMipStopSize) {
-			break;
-		}
-		bloomMipFbos[i]->resize(mipH, mipW);
-	}
-	bloomMipLevel = i;
+	lightSMPainter->resize(w, h);
+	mtrPainter->resize(w, h);
+	directLightPainter->resize(w,h);
+	directLightFilterPainter->resize(w, h);
+	hizFilterPainter->resize(w, h);
+	ssrPainter->resize(w, h);
+	ssrFilterPainter->resize(w, h);
+	ssdoPainter->resize(w, h);
+	ssdoFilterPainter->resize(w, h);
+	bloomFilterPainter->resize(w, h);
+	toneMapPainter->resize(w, h);
+	fxaaPainter->resize(w, h);
 
 	info.width = w;
 	info.height = h;
@@ -139,97 +139,51 @@ void Scene::resizeGL(int w, int h)
 
 void Scene::paintGL()
 {
-
 	if (!Singleton<GlobalInfo>::getSingleton()->shaderReady)
 		return;
 	doPrimAdd();
 
-	//Prepare shadow map
-	if (bNeedInitLight) {
-		for (int i = 0; i < lights_.size(); i++) {
-			std::shared_ptr<PointLight> ptlight = std::dynamic_pointer_cast<PointLight>(lights_[i]);
-			if (ptlight) {
-				std::shared_ptr<CubeShadowMapPaintVisitor> smpainter = std::make_shared<CubeShadowMapPaintVisitor>(ptlight);
-				ptlight->initFbo();
-				ptlight->getFbo()->bind();
-				ptlight->getFbo()->clear(&info);
-				GLFUNC->glViewport(0, 0, ptlight->shadowMapSize().x(), ptlight->shadowMapSize().y());
-				for (auto& prim : prims_) {
-					if(prim.first == ptlight->primitive()->id())
-						continue;
-					prim.second->paint(&info, smpainter.get());
-				}
-			}
-		}
-		GLFUNC->glViewport(0, 0, this->width(), this->height());
-		bNeedInitLight = false;
-		info.lights = lights_;
-	}
-
-	mtrfbo->bind();
-	mtrfbo->clear(&info);
-
+	/******* Prepare Paint Info ***********/
 	info.projMat = camera->getProjMatrix();
 	info.viewMat = camera->getViewMatrix();
-	
-	if(wfmode_) info.fillmode = FILL_WIREFRAME;
+	if (wfmode_) info.fillmode = FILL_WIREFRAME;
 	else info.fillmode = FILL;
 
-	for (auto& prim : prims_) {
-		prim.second->paint(&info, Singleton<DeferredMtrPaintVisitor>::getSingleton());
+	/******* Prepare Shadow Map ***********/
+	if (bNeedInitLight) {
+		info.lights = lights_;
+		lightSMPainter->paint(&info);
+		bNeedInitLight = false;
 	}
 
-	// Deferred Shading
-	info.mtrTex = mtrfbo->transferedTextureId();
+	/******* Prepare Deferred Shading ***********/
+	mtrPainter->paint(&info);
+
+	/******* Deferred Shading ***********/
 	// direct light
-	directLightFbo->bind();
-	directLightFbo->clear(&info);
-	billboard->paint(&info, Singleton<DirectLightPaintVisitor>::getSingleton());
+	directLightPainter->paint(&info);
 
 	// filter direct light
-	directLightFilterFbo->bind();
-	directLightFilterFbo->clear(&info);
-	billboard->paint(&info, Singleton<DirectLightFilterPaintVisitor>::getSingleton());
-
-	//SSR
-	ssrFbo->bind();
-	ssrFbo->clear(&info);
-	billboard->paint(&info, Singleton<SsrPaintVisitor>::getSingleton());
-
-	//SSR
-	ssrFilterFbo->bind();
-	ssrFilterFbo->clear(&info);
-	billboard->paint(&info, Singleton<SsrPaintFilterVisitor>::getSingleton());
+	directLightFilterPainter->paint(&info);
 
 	// SSDO
-	ssdoFbo->bind();
-	ssdoFbo->clear(&info);
-	billboard->paint(&info, Singleton<SsdoPaintVisitor>::getSingleton());
+	ssdoPainter->paint(&info);
 
 	// filter SSDO
-	ssdoFilterFbo->bind();
-	ssdoFilterFbo->clear(&info);
-	billboard->paint(&info, Singleton<SsdoFilterPaintVisitor>::getSingleton());
+	ssdoFilterPainter->paint(&info);
 
-	//Bloom down sample
-	for (int i = 0; i < bloomMipLevel; i++) {
-		glViewport(0, 0, bloomMipFbos[i]->texture()->size().x(), bloomMipFbos[i]->texture()->size().y());
-		bloomMipFbos[i]->bind();
-		bloomMipFbos[i]->clear(&info);
-		info.bloomSampleState = i+1;
-		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
-	}
+	hizFilterPainter->paint(&info);
 
-	//Bloom up sample
-	for (int i = bloomMipLevel - 1; i >= 1; i--) {
-		glViewport(0, 0, bloomMipFbos[i - 1]->texture()->size().x(), bloomMipFbos[i - 1]->texture()->size().y());
-		bloomMipFbos[i - 1]->bind();
-		info.bloomSampleState = -i-1;
-		billboard->paint(&info, Singleton<BloomFilterPaintVisitor>::getSingleton());
-	}
-	glViewport(0, 0, info.width, info.height);
+	// SSR
+	ssrPainter->paint(&info);
 
-	//Forward Shading
+	// SSR Filter
+	ssrFilterPainter->paint(&info);
+
+	// filter Bloom Mipmaps
+	bloomFilterPainter->paint(&info);
+
+	//Forward Shading For Line, Point etc.
 	//#TODO0
 	//for (auto& prim : prims_) {
 	//	prim.second->paint(&info, forwardPainter.get());
@@ -243,13 +197,11 @@ void Scene::paintGL()
 	//axis.paint();
 
 	//toneMap
-	toneMapFbo->bind();
-	toneMapFbo->clear(&info);
-	billboard->paint(&info, Singleton<ToneMapPaintVisitor>::getSingleton());
+	toneMapPainter->paint(&info);
 
-	GLFUNC->glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-	GLFUNC->glDisable(GL_DEPTH_TEST);
-	billboard->paint(&info, Singleton<FxaaPaintVisitor>::getSingleton());
+	fxaaPainter->paint(&info);
+
+	debugOpenGL();
 }
 
 void Scene::mouseMoveEvent(QMouseEvent *ev)

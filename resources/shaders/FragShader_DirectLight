@@ -31,10 +31,9 @@ uniform Light lights[maxLightCnt];
 uniform int lightCount;
 
 /* constants */
-const float noiseScale = 0.01;
 const float PI = 3.14159269;
-const int PcfSampleCnt = 4;
-const int PcssSampleCnt = 4;
+const int PcfSampleCnt = 10;
+const int PcssSampleCnt = 7;
 const float PseudoRandomFactor = 1;
 const float PcssShadowEdgeFadeFactor = 5;
 const float FullShadowedBlockerRate = 0.1;
@@ -63,27 +62,6 @@ vec3 random3(vec3 v3){
 			  dot(v3,vec3(251.13,918.13,-772.13)));
     return -1.0 + 2.0*fract(sin(v3)*1375896.453);
 }
-// Gradient Noise by Inigo Quilez - iq/2013
-// https://www.shadertoy.com/view/XdXGW8
-float noise(vec3 v3) {
-	v3 *= sceneExtent / noiseScale;
-    vec3 i = floor(v3);
-    vec3 f = fract(v3);
-
-    vec3 u = f*f*(3.0-2.0*f);
-																	 
-    return mix(mix(mix( dot( random3(i + vec3(0.0,0.0,0.0) ), f - vec3(0.0,0.0,0.0) ),
-						dot( random3(i + vec3(1.0,0.0,0.0) ), f - vec3(1.0,0.0,0.0) ), u.x),
-				   mix( dot( random3(i + vec3(0.0,1.0,0.0) ), f - vec3(0.0,1.0,0.0) ),
-						dot( random3(i + vec3(1.0,1.0,0.0) ), f - vec3(1.0,1.0,0.0) ), u.x), u.y),
-			   mix(mix( dot( random3(i + vec3(0.0,0.0,1.0) ), f - vec3(0.0,0.0,1.0) ),
-						dot( random3(i + vec3(1.0,0.0,1.0) ), f - vec3(1.0,0.0,1.0) ), u.x),
-				   mix( dot( random3(i + vec3(0.0,1.0,1.0) ), f - vec3(0.0,1.0,1.0) ),
-						dot( random3(i + vec3(1.0,1.0,1.0) ), f - vec3(1.0,1.0,1.0) ), u.x), u.y), u.z);
-}
-vec3 noise3(vec3 v3) {
-	return vec3(noise(v3),noise(v3 + sceneExtent * 12.414),noise(v3 + sceneExtent * 532.1365));
-}
 
 vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receiverDist, int dim){
 	vec3 ret = vec3(0);
@@ -93,7 +71,6 @@ vec3 calEmissionIn(int lightIdx, vec3 lightVec, vec3 normLightVec, float receive
 	float area = (lights[lightIdx].bound[1][j] - lights[lightIdx].bound[0][j])*(lights[lightIdx].bound[1][k] - lights[lightIdx].bound[0][k]);
 	return lights[lightIdx].emission * area * cosi / (receiverDist * receiverDist);
 }
-
 
 /*
  *	For shadow map

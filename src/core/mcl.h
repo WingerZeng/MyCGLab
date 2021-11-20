@@ -61,6 +61,7 @@ namespace mcl {
 	class Light;
 	class PointLight;
 	class PaintVisitor;
+	class PostProcPaintVisitor;
 	class ToneMapPaintVisitor;
 	class PaintInfomation;
 	class Camera;
@@ -78,6 +79,8 @@ namespace mcl {
 	class RTScene;
 	class Film;
 	struct HitRecord;
+	class AbstractGLFrameBufferObject;
+	class GLFrameBufferObject;
 	class GLColorFrameBufferObject;
 	class GLShadowMapFrameBufferObject;
 	class GLMultiSampleFrameBufferObject;

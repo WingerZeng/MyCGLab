@@ -19,6 +19,9 @@ namespace mcl {
 
 		virtual int paintLines(PaintInfomation* info, PLines* lines) override;
 
+	private:
+		void setPointUniform(PaintInfomation* info);
+		void setLineUniform(PaintInfomation* info);
 	};
 
 	class DeferredMtrPaintVisitor : public PaintVisitor

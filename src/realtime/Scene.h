@@ -1,12 +1,14 @@
 #pragma once
 
 #include <set>
-#include "mcl.h"
+#include <memory>
 #include <QtWidgets/QOpenGLWidget>
 #include <QVector3D>
+#include "mcl.h"
 #include "axis.h"
 #include "camera.h"
 #include "PaintInformation.h"
+#include "Painter.h"
 
 class QOpenGLDebugLogger;
 
@@ -95,29 +97,25 @@ namespace mcl {
 		bool wfmode_; // mode of wire frame
 		bool bNeedInitLight = false;
 
-		int rbo;
-
 		static const int MaxBloomMipLevel = 5;
-		static const int bloomMipStopSize = 8;
-		int bloomMipLevel = MaxBloomMipLevel;
+		static const int BloomMipStopSize = 8;
 
-		std::shared_ptr<PaintVisitor> mtrPainter;
-		std::shared_ptr<GLColorFrameBufferObject> pingpongFbo[3];
-		std::shared_ptr<GLColorFrameBufferObject> directLightFbo;
-		std::shared_ptr<GLColorFrameBufferObject> directLightFilterFbo;
-		std::shared_ptr<GLColorFrameBufferObject> ssrFbo;
-		std::shared_ptr<GLColorFrameBufferObject> ssrFilterFbo;
-		std::shared_ptr<GLColorFrameBufferObject> ssdoFbo;
-		std::shared_ptr<GLColorFrameBufferObject> ssdoFilterFbo;
-		std::shared_ptr<GLColorFrameBufferObject> toneMapFbo;
-		std::shared_ptr<GLColorFrameBufferObject> bloomMipFbos[MaxBloomMipLevel];
-		std::shared_ptr<GLMtrFrameBufferObject> mtrfbo;
-		std::shared_ptr<PTriMesh> billboard;
-		
+		std::shared_ptr<AbstractGLFrameBufferObject> pingpongFbo[3];
+
+		std::shared_ptr<Painter> lightSMPainter;
+		std::shared_ptr<Painter> mtrPainter;
+		std::shared_ptr<Painter> directLightPainter;
+		std::shared_ptr<Painter> directLightFilterPainter;
+		std::shared_ptr<Painter> hizFilterPainter;
+		std::shared_ptr<Painter> ssrPainter;
+		std::shared_ptr<Painter> ssrFilterPainter;
+		std::shared_ptr<Painter> ssdoPainter;
+		std::shared_ptr<Painter> ssdoFilterPainter;
+		std::shared_ptr<Painter> bloomFilterPainter;
+		std::shared_ptr<Painter> toneMapPainter;
+		std::shared_ptr<Painter> fxaaPainter;
 
 		Bound3f sceneBound;
-
-		const int sampleRate = 1; //#TODO0 改变sampleRate不起作用
 
 		PaintInfomation info;
 	};

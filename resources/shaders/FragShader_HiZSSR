@@ -1,0 +1,299 @@
+#version 430 core
+out vec3 FragColor;
+noperspective in vec2 texCoord;
+
+uniform sampler2D gFinalImage;
+uniform sampler2D gAlbedo;
+uniform sampler2D gSpecular;
+uniform sampler2D gWorldNormal;
+uniform sampler2D gWorldPos;
+
+// uniform for HiZ Mipmaps
+const int MaxHiZLevel = 15;
+uniform sampler2D gHiZMips[MaxHiZLevel];
+uniform vec2 MipSizes[MaxHiZLevel];
+uniform int HiZLevelCnt;
+
+uniform vec2 viewportSize;
+uniform float sceneExtent;
+uniform mat4 view;
+uniform mat4 invView;
+uniform mat4 project;
+uniform mat4 invProject;
+uniform vec3 bgColor;
+
+const vec2 inverseScreenSize = 1/viewportSize;
+const int SampleCnt = 5;
+const float SampleInterval = 1.0 / SampleCnt;
+const float RandomScale = 1376.453;
+const float edgeFadeRate = 1;
+const int HiZTopLevel = HiZLevelCnt - 1;
+const int HiZStartLevel = 0;
+const float HiZEpsilon = 1e-5;
+const int HiZMaxIteration = 500;
+const float minRayStep = sceneExtent / 100;
+
+bool ErrFlag = false;
+
+#define CHECK(condition) \
+	if(!(condition)){ \
+		ErrFlag = true; \
+	}
+#define CHECK_ERR()\
+	if(ErrFlag){ \
+		FragColor = vec3(0,0,20); \
+		return; \
+	}
+#define BLINN_PHONG 1.0
+#define PI 3.1415926
+
+vec3 RayMarch(vec3 dir, vec3 source, out bool ishit);
+vec2 random2(vec3 vec, int i, int j);
+vec3 BrdfSample(vec2 rand2D, vec3 rayOut, vec3 normal, vec3 t, vec3 b, vec4 albedo, vec4 specular, out vec3 rayIn);
+vec3 ViewToScreen(vec3 point);
+ivec2 getRayTexelCoord(vec2 rayCoord, int level);
+float getHiZDepth(vec2 coord, int level);
+void getTexelBound(ivec2 texelCoord, int level, out vec2 loBnd, out vec2 hiBnd);
+void calRayBoundIntersection(inout vec3 ray, vec3 d, vec2 loBnd, vec2 hiBnd, float depth, out bool isHitZ);
+vec3 ViewToScreen(vec3 viewCoord);
+bool coordInBnd(vec2 coord, vec2 loBnd, vec2 HiBnd, float epsilon);
+bool isRayOutOfScreen(vec3 ray);
+vec3 forwardOneTexel(vec3 ray, vec3 d, int level);
+
+// 光线求交, 输入相机空间的起点和方向，返回屏幕空间交点坐标
+vec3 RayMarch(vec3 dir, vec3 src, out bool ishit){
+	// 在相机空间中求光线上一点
+	vec3 dist = src + minRayStep * dir;
+
+	// 转换坐标到屏幕空间
+	vec3 sp1 = ViewToScreen(src);
+	vec3 sp2 = ViewToScreen(dist);
+	vec3 d = sp2 - sp1;
+	if(d.x == 0.0) 
+		d.x = HiZEpsilon;
+	if(d.y == 0.0)
+		d.y = HiZEpsilon;
+	d = normalize(d);
+	vec3 ray = sp1; //目前光线坐标
+
+	// 防止自相交，将初始位置前进一个单元格
+	ray = forwardOneTexel(ray, d, HiZStartLevel);
+
+	// 求交主循环
+	int level = HiZStartLevel;
+	int nIteration = 0;
+	while(level >= HiZStartLevel && nIteration < HiZMaxIteration){
+		// 检查是否超出屏幕边界
+		if(isRayOutOfScreen(ray)){
+			ishit = false;
+			return vec3(0);
+		}
+		float minDepth = getHiZDepth(ray.xy, level); //当前最小深度
+		ivec2 texelCoord = getRayTexelCoord(ray.xy, level);
+		vec2 loBnd, hiBnd;
+		getTexelBound(texelCoord, level, loBnd, hiBnd);
+		//CHECK(coordInBnd(ray.xy, loBnd, hiBnd, HiZEpsilon));
+		bool isHitZ;
+
+		calRayBoundIntersection(ray, d,loBnd, hiBnd, minDepth, isHitZ);
+		if(isHitZ){
+			--level;
+		}
+		else{
+			// 步进一个额外距离，防止停留在边界线上
+			ray += d * HiZEpsilon;
+			level = min(HiZTopLevel, level + 1);
+		}
+		++nIteration;
+	}
+	if(nIteration == HiZMaxIteration || isRayOutOfScreen(ray)){
+		ishit = false;
+		return vec3(0);
+	}
+	ishit = true;
+	return ray;
+}
+
+vec3 forwardOneTexel(vec3 ray, vec3 d, int level){
+	vec2 loBnd, hiBnd;
+	bool isHitZ;
+	ivec2 texelCoord = getRayTexelCoord(ray.xy, level);
+	getTexelBound(texelCoord, level, loBnd, hiBnd);
+	// 将光线前进到当前texel的边界上
+	calRayBoundIntersection(ray, d, loBnd, hiBnd, 1e5, isHitZ);
+	//CHECK(!isHitZ);
+	// 继续前进一个小步，防止落在边界上
+	ray += HiZEpsilon * d;
+	return ray;
+}
+
+// 求光线坐标在HiZ中的像素坐标
+ivec2 getRayTexelCoord(vec2 rayCoord, int level){
+	return ivec2(rayCoord * MipSizes[0]) >> level; //计算Mipmap0的坐标，然后除2^level
+}
+
+// 采样HiZ Mipmaps
+float getHiZDepth(vec2 coord, int level){
+	//return texture(gHiZMips[level], coord).r;
+	return texture(gHiZMips[level], (getRayTexelCoord(coord, level) + vec2(0.5,0.5))/MipSizes[level]).r;
+}
+
+// 获取指定HiZ Mipmap 像素在屏幕空间的范围
+void getTexelBound(ivec2 texelCoord, int level, out vec2 loBnd, out vec2 hiBnd){
+	// 考虑到边缘像素的情况，要先将texel区域映射到level 0进行处理
+	ivec2 loCoord = texelCoord << level;
+	ivec2 hiCoord = (texelCoord + ivec2(1,1)) << level;
+	vec2 invMipSize = 1.0f / MipSizes[0];
+	loBnd = loCoord * invMipSize;
+	hiBnd = min(hiCoord * invMipSize, 1);
+}
+
+// 光线与HiZ纹素求交
+void calRayBoundIntersection(inout vec3 ray, vec3 d, vec2 loBnd, vec2 hiBnd, float depth, out bool isHitZ){
+	// 判断光线起点在z plane 下的情况
+	if(ray.z >= depth){
+		isHitZ = true;
+		return;
+	}
+	vec3 intscCoord;
+	// 考虑击中深度平面的情况
+	if(d.z > 0){
+		float tz = (depth - ray.z) / d.z;
+		intscCoord = ray + tz * d;
+		if(tz > 0 && coordInBnd(intscCoord.xy, loBnd, hiBnd, HiZEpsilon)){
+			isHitZ = true;	
+			ray = intscCoord;
+			return;
+		}
+	}
+	// 计算Ray和边界直线的所有交点
+	//CHECK(d.x != 0.0 && d.y != 0.0);
+	float t1, t2;
+	t1 = d.x > 0 ? (hiBnd.x - ray.x) / d.x : (loBnd.x - ray.x) / d.x;
+	t2 = d.y > 0 ? (hiBnd.y - ray.y) / d.y : (loBnd.y - ray.y) / d.y;
+	float t = min(t1,t2);
+	//CHECK(t >= -HiZEpsilon);
+	// 求交点
+	intscCoord = ray + t * d;
+	//CHECK(coordInBnd(intscCoord.xy, loBnd, hiBnd, HiZEpsilon));
+	isHitZ = false;
+
+	ray = intscCoord;
+}
+
+bool coordInBnd(vec2 coord, vec2 loBnd, vec2 HiBnd, float epsilon){
+	return coord.x <= HiBnd.x + epsilon && coord.y <= HiBnd.y + epsilon  &&
+			coord.x >= loBnd.x - epsilon && coord.y >= loBnd.y - epsilon;
+}
+
+bool isRayOutOfScreen(vec3 ray){
+	return ray.x < 0 || ray.y < 0 || ray.x > 1 || ray.y > 1 || ray.z > 1;
+}
+
+vec3 ViewToScreen(vec3 viewCoord){
+	vec4 clipCoord = project * vec4(viewCoord,1);
+	vec3 ndcCoord = clipCoord.xyz / clipCoord.w;
+	vec3 screenCoord = (ndcCoord + 1) / 2;
+	return screenCoord;	
+}
+
+void main(){
+	vec4 finalFragColor = texture(gFinalImage, texCoord);
+
+	vec4 albedo = texture(gAlbedo, texCoord);
+	vec4 specular = texture(gSpecular, texCoord);
+
+	// 判断材质类型
+	if(albedo.a == BLINN_PHONG){  //目前只支持BlinnPhong
+		if(length(specular.rgb) <= 1e-4)
+			return;
+	}
+	else{
+		return;
+	}
+
+	// 准备法向和着色点坐标
+	vec3 worldNormal = normalize(texture(gWorldNormal, texCoord).xyz);
+	vec3 worldPosition = texture(gWorldPos, texCoord).xyz;
+	vec3 viewNormal = normalize((transpose(invView) * vec4(worldNormal,0)).xyz);
+	vec3 viewPosition = (view * vec4(worldPosition,1)).xyz;
+
+	// 求切向和副切向
+	int pivotAxis;
+	if(abs(viewNormal.x) < abs(viewNormal.y) && abs(viewNormal.x) < abs(viewNormal.z))
+		pivotAxis = 0;
+	else if(abs(viewNormal.y) < abs(viewNormal.z))
+		pivotAxis = 1;
+	else
+		pivotAxis = 2;
+	vec3 helpvec = vec3(0);
+	helpvec[pivotAxis] = 1;
+	vec3 t = cross(helpvec, viewNormal.xyz);
+	vec3 b = cross(viewNormal.xyz, t);
+	t = normalize(t);
+	b = normalize(b);
+
+	// 样本遍历
+	vec3 reflectResult = vec3(0);
+	for(int i=0;i<SampleCnt;i++){
+		for(int j=0;j<SampleCnt;j++){
+			// Stratified Jitter
+			vec2 rand2d = SampleInterval * (vec2(i,j) + random2(worldPosition, i, j));
+			vec3 viewReflect;
+			// 重要性采样Brdf
+			vec3 brdf = BrdfSample(rand2d, viewPosition, viewNormal, t, b, albedo, specular, viewReflect);
+			// 屏幕空间光线求交
+			bool ishit;
+			vec3 itscCoords = RayMarch(viewReflect, viewPosition, ishit);
+			// 计算颜色
+			vec3 hitColor;
+			float edgeFadeFactor;
+			if(!ishit){
+				// 未找到交点，返回背景色
+				hitColor = bgColor;
+				edgeFadeFactor = 1;
+			}
+			else{
+				hitColor = texture(gFinalImage, itscCoords.xy).rgb;
+				// 根据反射光线交点与屏幕边界的距离，对边缘进行淡化处理
+				// factor == 1 说明在画面中心, factor == 0 说明落在边界之外
+				vec2 edgeFactor = clamp(smoothstep(0.5, 0.4, abs(vec2(0.5,0.5) - itscCoords.xy)), 0, 1);
+				edgeFadeFactor = clamp(pow(edgeFactor.x * edgeFactor.y, edgeFadeRate), 0.0, 1.0);
+			}
+			// 最终反射值
+			reflectResult += (hitColor * edgeFadeFactor + bgColor * (1-edgeFadeFactor)) * brdf;
+		}
+	}
+	reflectResult /= SampleCnt * SampleCnt;
+	FragColor += reflectResult;
+	//CHECK_ERR();
+}
+
+// 随机函数
+vec2 random2(vec3 vec, int i, int j){
+    vec2 ret = vec2(dot(vec.yzx,vec3(127.1,-311.7,123.7)),
+					dot(vec.xyz,vec3(269.5,-183.3,812.321)));
+	ret = fract(sqrt(abs(ret*RandomScale))*RandomScale*vec2(i+1,j+1));
+    return ret;
+}
+
+// BRDF重要性采样，rayOut方向指向着色点；返回rayIn，方向远离着色点；返回值为BRDF值，并包含pdf项和cos项。
+vec3 BrdfSample(vec2 rand2D, vec3 rayOut, vec3 normal, vec3 t, vec3 b, vec4 albedo, vec4 specular, out vec3 rayIn){
+	vec3 ret;
+	if(albedo.a == BLINN_PHONG){
+		float ns = specular.a;
+		float cosPhiH = cos(rand2D.x * 2 * PI);
+		float sinPhiH = sqrt(1 - cosPhiH * cosPhiH) * (rand2D.x>0.5?1:-1);
+		// 防止cosThetaH = 0
+		rand2D.y = max(rand2D.y, 1e-3);
+		float cosThetaH = pow(rand2D.y, 1.0/(ns+1));
+		float sinThetaH = sqrt(1 - cosThetaH * cosThetaH);
+		vec3 halfVec = normal * cosThetaH + t * cosPhiH * sinThetaH + b * sinPhiH * sinThetaH;
+		rayIn = normalize(reflect(rayOut, halfVec));
+		ret = specular.rgb;
+		if(dot(rayIn, normal) < 0){
+			ret = vec3(0);
+		}
+	}
+	return ret;
+}
